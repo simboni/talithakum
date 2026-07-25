@@ -60,8 +60,41 @@ ${safe(adminJs).trim()}
 </script>
 `;
 
+/* Second output: the same page split into three uploaded files plus a small
+   paste. For hosts, WAFs or security plugins that reject a ~120 KB inline
+   paste. See docs/setup.md section 5. */
+const split = `<!--
+  ================================================================
+  Talitha Kum Kenya - Publications page (SPLIT INSTALL)
+
+  Use this version ONLY if the single-file version was rejected.
+
+  1. Upload these three files to /wp-content/uploads/tkpub/ using your
+     host's File Manager or FTP (the WordPress Media Library will not
+     accept .css or .js):
+
+       src/publications.css   ->  /wp-content/uploads/tkpub/publications.css
+       src/publications.js    ->  /wp-content/uploads/tkpub/publications.js
+       src/admin.js           ->  /wp-content/uploads/tkpub/admin.js
+
+  2. Paste everything below into the Elementor HTML widget.
+
+  publications.js MUST load before admin.js. If you ever change a file,
+  bump the ?v= number on all three so browsers fetch the new copy.
+  ================================================================
+-->
+
+<link rel="stylesheet" href="/wp-content/uploads/tkpub/publications.css?v=1">
+
+${markup.trim()}
+
+<script src="/wp-content/uploads/tkpub/publications.js?v=1"></script>
+<script src="/wp-content/uploads/tkpub/admin.js?v=1"></script>
+`;
+
 await mkdir(join(root, "elementor"), { recursive: true });
 await writeFile(join(root, "elementor", "publications-page.html"), out, "utf8");
+await writeFile(join(root, "elementor", "publications-page-split.html"), split, "utf8");
 
 const kb = (s) => `${(Buffer.byteLength(s, "utf8") / 1024).toFixed(1)} KB`;
 console.log(`built elementor/publications-page.html  ${kb(out)}`);

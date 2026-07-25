@@ -1,0 +1,169 @@
+<!--
+  ================================================================
+  Talitha Kum Kenya - Publications page (SPLIT INSTALL)
+
+  Use this version ONLY if the single-file version was rejected.
+
+  1. Upload these three files to /wp-content/uploads/tkpub/ using your
+     host's File Manager or FTP (the WordPress Media Library will not
+     accept .css or .js):
+
+       src/publications.css   ->  /wp-content/uploads/tkpub/publications.css
+       src/publications.js    ->  /wp-content/uploads/tkpub/publications.js
+       src/admin.js           ->  /wp-content/uploads/tkpub/admin.js
+
+  2. Paste everything below into the Elementor HTML widget.
+
+  publications.js MUST load before admin.js. If you ever change a file,
+  bump the ?v= number on all three so browsers fetch the new copy.
+  ================================================================
+-->
+
+<link rel="stylesheet" href="/wp-content/uploads/tkpub/publications.css?v=1">
+
+<!-- =========================================================================
+     Talitha Kum RAHT Kenya — Publications repository
+     Markup only. build.mjs inlines the CSS and JS around this to produce
+     elementor/publications-page.html, which is what you paste into Elementor.
+     ========================================================================= -->
+
+<div class="tkpub">
+
+  <!-- Admin panel. Empty on purpose — admin.js fills it in, and only for
+       users WordPress has marked as logged in. -->
+  <section id="tkpub-admin" class="tkpub-admin" aria-label="Publishing panel"></section>
+
+  <header class="tkpub-head">
+    <span class="tkpub-eyebrow">Resource Library</span>
+    <h1 class="tkpub-title">Publications</h1>
+    <p class="tkpub-lede">
+      Research, training material, policy briefs and reflections from Religious
+      Against Human Trafficking &mdash; Kenya. Read any document here on the page,
+      or download it to share.
+    </p>
+  </header>
+
+  <div class="tkpub-toolbar">
+    <div class="tkpub-toolbar-row">
+      <div class="tkpub-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+        </svg>
+        <label class="tkpub-sr" for="tkpub-search">Search publications</label>
+        <input type="search" id="tkpub-search" placeholder="Search titles, topics, keywords&hellip;" autocomplete="off">
+        <button type="button" class="tkpub-search-clear" aria-label="Clear the search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <label class="tkpub-sr" for="tkpub-year">Filter by year</label>
+      <select id="tkpub-year" class="tkpub-select"><option value="">All years</option></select>
+
+      <label class="tkpub-sr" for="tkpub-lang">Filter by language</label>
+      <select id="tkpub-lang" class="tkpub-select" hidden><option value="">All languages</option></select>
+
+      <label class="tkpub-sr" for="tkpub-sort">Sort</label>
+      <select id="tkpub-sort" class="tkpub-select">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="az">Title A&ndash;Z</option>
+        <option value="za">Title Z&ndash;A</option>
+      </select>
+
+      <div class="tkpub-views" role="group" aria-label="Change the layout">
+        <button type="button" data-view="grid" aria-pressed="true" aria-label="Grid view" title="Grid view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          </svg>
+        </button>
+        <button type="button" data-view="list" aria-pressed="false" aria-label="List view" title="List view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tkpub-facets" id="tkpub-type-facets"></div>
+    <div class="tkpub-facets" id="tkpub-theme-facets"></div>
+  </div>
+
+  <div class="tkpub-resultbar">
+    <p id="tkpub-count"></p>
+  </div>
+  <p class="tkpub-sr" id="tkpub-live" role="status" aria-live="polite"></p>
+
+  <div id="tkpub-featured"></div>
+  <div id="tkpub-grid" class="tkpub-grid"></div>
+  <div id="tkpub-empty"></div>
+  <div id="tkpub-more" class="tkpub-more"></div>
+
+</div>
+
+<!-- PDF viewer. Lives outside .tkpub-toolbar so it can sit above everything. -->
+<div class="tkpub tkpub-modal" id="tkpub-modal" role="dialog" aria-modal="true" aria-label="Document reader">
+  <div class="tkpub-modal-panel">
+
+    <div class="tkpub-modal-bar">
+      <div class="tkpub-modal-titles">
+        <h2></h2>
+        <p></p>
+      </div>
+
+      <div class="tkpub-modal-tools">
+        <div class="tkpub-pager">
+          <button type="button" class="tkpub-icbtn" data-prev aria-label="Previous page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
+          </button>
+          <label class="tkpub-sr" for="tkpub-page-input">Page number</label>
+          <input type="text" id="tkpub-page-input" inputmode="numeric" value="1">
+          <span class="tkpub-pagecount">/ 1</span>
+          <button type="button" class="tkpub-icbtn" data-next aria-label="Next page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
+          </button>
+        </div>
+
+        <button type="button" class="tkpub-icbtn tkpub-zoom" data-zoomout aria-label="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M8.5 11h5M20 20l-3.5-3.5"></path></svg>
+        </button>
+        <span class="tkpub-zoomlevel">100%</span>
+        <button type="button" class="tkpub-icbtn tkpub-zoom" data-zoomin aria-label="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M11 8.5v5M8.5 11h5M20 20l-3.5-3.5"></path></svg>
+        </button>
+
+        <button type="button" class="tkpub-icbtn is-close" data-close aria-label="Close the reader">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tkpub-modal-stage" id="tkpub-stage"></div>
+
+    <div class="tkpub-modal-foot">
+      <div id="tkpub-modal-foot-meta"></div>
+      <div class="tkpub-actions" style="padding:0;margin:0">
+        <button type="button" class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-copy>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
+          Copy link
+        </button>
+        <a class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-tab href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4 11 13"></path><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path></svg>
+          Full screen
+        </a>
+        <a class="tkpub-btn tkpub-btn-primary tkpub-btn-sm" data-dl href="#" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7.5 11 4.5 4.5 4.5-4.5"></path><path d="M4 20h16"></path></svg>
+          Download
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="tkpub tkpub-toasts" role="status" aria-live="polite"></div>
+
+<script src="/wp-content/uploads/tkpub/publications.js?v=1"></script>
+<script src="/wp-content/uploads/tkpub/admin.js?v=1"></script>
