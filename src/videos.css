@@ -107,8 +107,11 @@
 
 /* --- Grid ---------------------------------------------------------------- */
 
+/* 320px minimum: on a normal 1140px column that is three cards rather than
+   four, so each thumbnail is about a third larger and the faces in it are
+   actually readable. */
 .tkvid-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px;
 }
 .tkvid-card {
   background: var(--v-surface); border: 1px solid var(--v-line);
@@ -124,22 +127,35 @@
   border: 0; padding: 0; background: var(--v-deep);
   display: block; overflow: hidden; cursor: pointer;
 }
-.tkvid-thumb img { width: 100%; height: 100%; object-fit: cover; }
+/* The photograph sits on top of the coloured cover and fades in once it has
+   actually decoded, so the walk down the size list is never visible. */
+.tkvid-thumb img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity .25s ease;
+}
+.tkvid-thumb img.is-on { opacity: 1; }
 .tkvid-thumb .tkvid-fallback {
   position: absolute; inset: 0;
   background: linear-gradient(140deg, var(--v-c1, #F74F22), var(--v-c2, #B32E0B));
 }
+/* A soft floor under the duration and play button so both stay legible on a
+   bright frame. */
+.tkvid-thumb::after {
+  content: ""; position: absolute; inset: 40% 0 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.42));
+}
+@media (prefers-reduced-motion: reduce) { .tkvid-thumb img { transition: none; } }
 .tkvid-play {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 58px; height: 58px; border-radius: 50%;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2;
+  width: 62px; height: 62px; border-radius: 50%;
   background: rgba(35,35,35,.72); backdrop-filter: blur(2px);
   display: grid; place-items: center;
   transition: background .18s, transform .18s;
 }
-.tkvid-play svg { width: 22px; height: 22px; color: #fff; margin-left: 3px; }
+.tkvid-play svg { width: 24px; height: 24px; color: #fff; margin-left: 3px; }
 .tkvid-thumb:hover .tkvid-play { background: var(--v-accent); transform: translate(-50%, -50%) scale(1.06); }
 .tkvid-dur {
-  position: absolute; right: 8px; bottom: 8px;
+  position: absolute; right: 8px; bottom: 8px; z-index: 2;
   background: rgba(0,0,0,.78); color: #fff;
   font-size: 11.5px; font-weight: 700; letter-spacing: .02em;
   padding: 3px 7px; border-radius: 4px; font-variant-numeric: tabular-nums;
@@ -175,10 +191,12 @@
 
 .tkvid-featured { margin-bottom: 22px; }
 .tkvid-featured .tkvid-card {
-  display: grid; grid-template-columns: 1.35fr 1fr; align-items: stretch;
+  display: grid; grid-template-columns: 1.6fr 1fr; align-items: stretch;
 }
 .tkvid-featured .tkvid-thumb { height: 100%; aspect-ratio: 16 / 9; }
-.tkvid-featured .tkvid-body { padding: 24px; justify-content: center; }
+.tkvid-featured .tkvid-play { width: 76px; height: 76px; }
+.tkvid-featured .tkvid-play svg { width: 30px; height: 30px; }
+.tkvid-featured .tkvid-body { padding: 26px 28px; justify-content: center; }
 .tkvid-featured h3 { font-size: clamp(19px, 2.2vw, 25px); -webkit-line-clamp: 3; line-clamp: 3; }
 .tkvid-featured .tkvid-sum { -webkit-line-clamp: 4; line-clamp: 4; font-size: 15px; }
 .tkvid-flag {
@@ -336,7 +354,18 @@ body.tkvid-locked [id*="back-to-top"] { display: none !important; }
   display: flex; gap: 12px; align-items: center;
   border: 1px solid var(--v-line); border-radius: 8px; padding: 10px; background: var(--v-surface);
 }
-.tkvid-prev img { width: 108px; aspect-ratio: 16/9; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
+/* Small covers in the panel share one box, so an image that never arrives
+   leaves a tidy placeholder instead of collapsing the row. */
+.tkvid-rowimg {
+  position: relative; display: block; overflow: hidden; flex-shrink: 0;
+  aspect-ratio: 16/9; background: var(--v-line-soft); border-radius: 5px;
+}
+.tkvid-rowimg img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity .2s ease;
+}
+.tkvid-rowimg img.is-on { opacity: 1; }
+.tkvid-prev .tkvid-rowimg { width: 132px; }
 .tkvid-prev b { display: block; font-size: 13.5px; color: var(--v-deep); }
 .tkvid-prev span { font-size: 12px; color: var(--v-muted); }
 
@@ -377,7 +406,7 @@ body.tkvid-locked [id*="back-to-top"] { display: none !important; }
   display: grid; grid-template-columns: 78px 1fr auto auto; gap: 12px; align-items: center;
   border: 1px solid var(--v-line); border-radius: 8px; padding: 9px 11px;
 }
-.tkvid-row img { width: 78px; aspect-ratio: 16/9; object-fit: cover; border-radius: 4px; }
+.tkvid-row .tkvid-rowimg { width: 78px; border-radius: 4px; }
 .tkvid-row b {
   display: block; font-size: 14px; color: var(--v-deep);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -438,7 +467,7 @@ body.tkvid-locked [id*="back-to-top"] { display: none !important; }
   .tkvid-toasts { left: 14px; right: 14px; }
   .tkvid-toast { max-width: none; }
   .tkvid-row { grid-template-columns: 64px 1fr auto; grid-template-areas: "img body del" "img st del"; }
-  .tkvid-row img { grid-area: img; width: 64px; }
+  .tkvid-row .tkvid-rowimg { grid-area: img; width: 64px; }
   .tkvid-row > div { grid-area: body; min-width: 0; }
   .tkvid-row .tkvid-st { grid-area: st; justify-self: start; }
   .tkvid-row .tkvid-del { grid-area: del; }

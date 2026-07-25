@@ -49,11 +49,11 @@ async function thumbnails(files) {
       const im = new Image();
       im.src = src;
       await im.decode();
-      const w = 640, h = Math.round((w / im.width) * im.height);
+      const w = 860, h = Math.round((w / im.width) * im.height);
       const c = document.createElement("canvas");
       c.width = w; c.height = h;
       c.getContext("2d").drawImage(im, 0, 0, w, h);
-      return c.toDataURL("image/jpeg", 0.72);
+      return c.toDataURL("image/jpeg", 0.68);
     }, `data:image/jpeg;base64,${raw.toString("base64")}`);
   }
   await browser.close();
@@ -142,7 +142,15 @@ const previewScript = `
       var photo = PHOTO[b.getAttribute("data-play")];
       if (!photo) return;
       var img = b.querySelector("img");
-      if (img && img.src.indexOf("data:") !== 0) img.src = photo;
+      /* The page drops an image whose every size 404s, which is exactly what
+         happens with no network, so it may need putting back. */
+      if (!img) {
+        img = new Image();
+        img.className = "tkvid-img";
+        b.insertBefore(img, b.querySelector(".tkvid-play"));
+      }
+      img.removeAttribute("data-alt");
+      if (img.src.indexOf("data:") !== 0) img.src = photo;
     });
   }
   new MutationObserver(swapThumbs).observe(document.documentElement, { childList: true, subtree: true });
@@ -294,13 +302,15 @@ ${css.trim()}
     <h1>A videos page for Talitha Kum Kenya</h1>
     <p>
       The working page &#8212; search, filters and the player are live. Built
-      light on purpose: <b>55&#160;KB against the publications page's 173&#160;KB</b>,
+      light on purpose: <b>59&#160;KB against the publications page's 173&#160;KB</b>,
       and no YouTube code loads at all until someone presses play.
     </p>
     <p>
       Six <b>sample entries</b> with deliberately generic titles. Thumbnails
       here are the organisation's own photographs; on the live site YouTube
-      supplies them automatically from the link.
+      supplies them automatically from the link &#8212; now the
+      <b>1280&#215;720 frame</b>, so the newest video runs wide across the top
+      and the rest sit three to a row instead of four.
     </p>
     <ul class="pv-try">
       <li><b>Press play</b> on any card</li>
@@ -334,6 +344,14 @@ ${asciiHtml(markup.trim())}
          free <b>keywords</b>. Staff learn the system once.</p>
       <p>Types here are video-specific: awareness, testimony, training, event
          highlights, interview, reflection, documentary.</p>
+    </div>
+    <div class="pv-card">
+      <h2>The sharpest frame YouTube has</h2>
+      <p>The card asks for the 1280&#215;720 still first and steps down through
+         the smaller sizes only if that video has none, so nothing is upscaled
+         and nothing arrives letterboxed.</p>
+      <p>A coloured cover is drawn underneath and the photograph fades in on
+         top, so a slow connection never shows a black box.</p>
     </div>
     <div class="pv-card">
       <h2>Why it stays fast</h2>

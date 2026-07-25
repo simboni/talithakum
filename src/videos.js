@@ -101,6 +101,8 @@
   var YT = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/;
   var VM = /vimeo\.com\/(?:video\/|channels\/[^/]+\/|groups\/[^/]+\/videos\/)?(\d{6,})/;
 
+  function ytImg(id, size) { return "https://i.ytimg.com/vi/" + id + "/" + size + ".jpg"; }
+
   function parseVideo(url) {
     url = String(url || "").trim();
     if (!url) return null;
@@ -112,7 +114,14 @@
         /* nocookie: no tracking cookie is set unless the visitor plays it. */
         embed: "https://www.youtube-nocookie.com/embed/" + m[1] + "?autoplay=1&rel=0&playsinline=1&modestbranding=1",
         watch: "https://www.youtube.com/watch?v=" + m[1],
-        thumb: "https://i.ytimg.com/vi/" + m[1] + "/hqdefault.jpg"
+        /* Thumbnail sizes, sharpest first. maxresdefault and hq720 are both
+           1280x720 and genuinely 16:9; hqdefault is only 480x360 with black
+           bars baked in, which is what made these look soft and cropped. No
+           size is guaranteed to exist, so the card asks for the best and
+           walks down the list on a 404 — see thumbFall(). */
+        thumb: ytImg(m[1], "maxresdefault"),
+        thumbAlt: [ytImg(m[1], "hq720"), ytImg(m[1], "sddefault"), ytImg(m[1], "hqdefault")],
+        thumbSmall: ytImg(m[1], "mqdefault")   // 320x180, always exists — for list rows
       };
     }
     m = VM.exec(url);
@@ -121,11 +130,49 @@
         provider: "vimeo", id: m[1],
         embed: "https://player.vimeo.com/video/" + m[1] + "?autoplay=1",
         watch: "https://vimeo.com/" + m[1],
-        thumb: ""   // Vimeo needs an API call for this; the card draws a cover instead
+        thumb: "", thumbAlt: [], thumbSmall: ""   // Vimeo needs an API call; the card draws a cover instead
       };
     }
     if (!/^https?:\/\//i.test(url)) return null;
-    return { provider: "link", id: "", embed: "", watch: url, thumb: "" };
+    return { provider: "link", id: "", embed: "", watch: url, thumb: "", thumbAlt: [], thumbSmall: "" };
+  }
+
+  /* ---- thumbnail fallback chain ---------------------------------------
+     Bound once, in capture phase, because <img> error and load do not
+     bubble. An image that runs out of sizes removes itself and lets the
+     coloured cover underneath show through, so a card is never blank.
+     YouTube answers a missing size with a 120x90 grey placeholder and a
+     200, so the width is checked as well as the error.                    */
+
+  function thumbNext(img) {
+    var rest = (img.getAttribute("data-alt") || "").split("|").filter(Boolean);
+    var next = rest.shift();
+    if (next) { img.setAttribute("data-alt", rest.join("|")); img.src = next; return; }
+    img.removeAttribute("data-alt");
+    if (img.parentNode) img.parentNode.removeChild(img);
+  }
+
+  function thumbFall() {
+    function handle(e, failed) {
+      var img = e.target;
+      if (!img || img.tagName !== "IMG" || img.className.indexOf("tkvid-img") < 0) return;
+      if (failed || (img.naturalWidth && img.naturalWidth <= 121)) {
+        if (img.hasAttribute("data-alt")) thumbNext(img);
+        else if (failed && img.parentNode) img.parentNode.removeChild(img);
+        return;
+      }
+      img.removeAttribute("data-alt");
+      img.classList.add("is-on");
+    }
+    document.addEventListener("load", function (e) { handle(e, false); }, true);
+    document.addEventListener("error", function (e) { handle(e, true); }, true);
+  }
+
+  function imgMarkup(src, alts, w, h) {
+    if (!src) return "";
+    return '<img class="tkvid-img" src="' + esc(src) + '"' +
+      (alts && alts.length ? ' data-alt="' + esc(alts.join("|")) + '"' : "") +
+      ' alt="" loading="lazy" decoding="async" width="' + w + '" height="' + h + '">';
   }
 
   /* ---- REST ----------------------------------------------------------- */
@@ -175,13 +222,17 @@
       if (Array.isArray(g)) terms = terms.concat(g);
     });
 
+    /* Term names arrive HTML-encoded — "Youth &amp; Schools" — so they go
+       through plain() like the title does. Without it the ampersand gets
+       escaped a second time on the way out and reads "Youth &AMP; Schools". */
     var type = "Video", themes = [];
     terms.forEach(function (t) {
-      if (t.taxonomy === "category" && t.parent === state.parentId) type = t.name;
-      else if (t.taxonomy === "post_tag") themes.push(t.name);
+      if (t.taxonomy === "category" && t.parent === state.parentId) type = plain(t.name);
+      else if (t.taxonomy === "post_tag") themes.push(plain(t.name));
     });
 
-    var v = parseVideo(data.url || "") || { provider: "link", embed: "", watch: data.url || "", thumb: "" };
+    var v = parseVideo(data.url || "") ||
+      { provider: "link", embed: "", watch: data.url || "", thumb: "", thumbAlt: [], thumbSmall: "" };
     var summary = plain(item.excerpt && item.excerpt.rendered);
 
     return {
@@ -201,6 +252,8 @@
       embed: v.embed,
       watch: v.watch,
       thumb: v.thumb,
+      thumbAlt: v.thumbAlt || [],
+      thumbSmall: v.thumbSmall || "",
       hay: [item.title && item.title.rendered, summary, type, themes.join(" ")].join(" ").toLowerCase()
     };
   }
@@ -208,10 +261,12 @@
   /* ---- rendering ------------------------------------------------------ */
 
   function thumbMarkup(v) {
+    /* The coloured cover is always drawn, and the photograph fades in on top
+       of it. A slow connection, a blocked host or a video with no artwork
+       therefore still gets a finished-looking card rather than a black box. */
     var g = gradFor(v.title || v.slug || "x");
-    var inner = v.thumb
-      ? '<img src="' + esc(v.thumb) + '" alt="" loading="lazy" width="480" height="270">'
-      : '<span class="tkvid-fallback" style="--v-c1:' + g[0] + ';--v-c2:' + g[1] + '"></span>';
+    var inner = '<span class="tkvid-fallback" style="--v-c1:' + g[0] + ';--v-c2:' + g[1] + '"></span>' +
+      imgMarkup(v.thumb, v.thumbAlt, 1280, 720);
     return '<button type="button" class="tkvid-thumb" data-play="' + esc(v.slug) + '" ' +
       'aria-label="Play: ' + esc(v.title) + '">' + inner +
       '<span class="tkvid-play">' + I.play + "</span>" +
@@ -243,9 +298,12 @@
       return words.every(function (w) { return v.hay.indexOf(w) > -1; });
     });
 
+    /* From the second video onwards the newest one takes the wide slot. With
+       only a handful published that reads far better than a row of small
+       cards with empty space beside them. */
     var filtered = !!(state.q || state.type);
     var list = state.shown, feat = null;
-    if (!filtered && list.length > 2) {
+    if (!filtered && list.length > 1) {
       feat = list.filter(function (v) { return v.featured; })[0] || list[0];
       list = list.filter(function (v) { return v !== feat; });
     }
@@ -391,6 +449,7 @@
 
     el.grid.innerHTML = new Array(7).join(
       '<div class="tkvid-skel"><i></i><span style="width:40%"></span><span style="width:85%"></span></div>');
+    thumbFall();
     wire();
 
     load().then(function () {
@@ -615,8 +674,7 @@
       host.innerHTML = items.map(function (p) {
         var v = normalise(p);
         return '<div class="tkvid-row">' +
-          (v.thumb ? '<img src="' + esc(v.thumb) + '" alt="" loading="lazy">' :
-            '<img src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\'/%3E" alt="">') +
+          '<span class="tkvid-rowimg">' + imgMarkup(v.thumbSmall, [], 320, 180) + "</span>" +
           "<div><b>" + esc(v.title) + "</b><small>" + esc(niceDate(v.date)) + "</small></div>" +
           '<span class="tkvid-st is-' + esc(p.status) + '">' + esc(p.status) + "</span>" +
           '<button type="button" class="tkvid-del" data-del="' + p.id +
@@ -719,7 +777,7 @@
       var box = $("#tkvid-prev");
       if (!v) { box.innerHTML = ""; return; }
       box.innerHTML = '<div class="tkvid-prev" style="margin-top:8px">' +
-        (v.thumb ? '<img src="' + esc(v.thumb) + '" alt="">' : "") +
+        (v.thumb ? '<span class="tkvid-rowimg">' + imgMarkup(v.thumb, v.thumbAlt, 480, 270) + "</span>" : "") +
         "<div><b>" + (v.provider === "link" ? "Link recognised" : v.provider === "youtube" ? "YouTube" : "Vimeo") +
         "</b><span>" + (v.embed ? "Will play here on the page." :
           "Will open on the original site — it cannot be embedded.") + "</span></div></div>";

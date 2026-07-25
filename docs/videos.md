@@ -2,7 +2,7 @@
 
 A companion to the publications library, kept deliberately small. A video is a
 link, so nothing is uploaded and no cover image is needed. The built page is
-about 55 KB against the publications page's 173 KB, and no YouTube or Vimeo
+about 59 KB against the publications page's 173 KB, and no YouTube or Vimeo
 code loads at all until a visitor presses play.
 
 ## Install
@@ -38,6 +38,12 @@ Open the page while logged in, press **OPEN PANEL**, then **Add a video**.
 
 The thumbnail appears as soon as you paste the link. If it does not, the link
 is wrong — fix it before publishing rather than after.
+
+Nothing is uploaded for the cover. The page asks YouTube for the 1280×720
+still, and falls back through the smaller sizes only if that particular video
+has none. Videos uploaded from a phone at low resolution have no large still,
+so their card will always be softer than the rest — that is the source
+material, not the page.
 
 Save as a **draft** first, look at the page, then publish. Same rule as
 documents.
@@ -109,6 +115,10 @@ Deleting the entry here does not touch the video on YouTube.
 - The iframe is created on the tap that plays it and destroyed when the player
   closes, so nothing keeps running in the background.
 - Vimeo videos have no free thumbnail, so they get a branded cover instead.
+- The newest video takes the wide slot at the top as soon as there are two.
+- Set the **Type** on every video. Without a child category under `videos`
+  the card falls back to the word "Video", and the filter chips collapse into
+  a single "Video" chip that filters nothing.
 - Deep links work: opening a video puts `?video=<slug>` in the address bar, and
   that link opens straight into it.
 
@@ -118,7 +128,8 @@ Deleting the entry here does not touch the video on YouTube.
 cd test && node videos.mjs
 ```
 
-37 checks: rendering, filters, search, the player, deep links, the staff panel,
-and mobile layout at 360x800 and iPhone 14. Thumbnail and player hosts are
-blocked during the run, so every assertion also proves the page still works
-when YouTube is unreachable.
+53 checks: rendering, filters, search, the player, deep links, the staff panel,
+thumbnail quality, and mobile layout at 360x800 and iPhone 14. Most of the run
+blocks the thumbnail and player hosts, so those assertions also prove the page
+still works when YouTube is unreachable; one block serves a real 1280x720
+frame and measures what the reader actually sees.

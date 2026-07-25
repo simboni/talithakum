@@ -28,7 +28,7 @@ const SAMPLES = [
   { t: "Know the Signs: Recruitment on Social Media", ty: "Training", th: ["Prevention", "Digital Safety"],
     u: "https://youtu.be/nfmBw6rmO7U?si=NcGUYAF", dur: "12:04",
     s: "A facilitator walks through the recruitment patterns targeting students." },
-  { t: "Bakhita Day Reflection", ty: "Prayer & Reflection", th: ["Prayer", "Faith Formation"],
+  { t: "Bakhita Day Reflection", ty: "Prayer & Reflection", th: ["Prayer", "Youth & Schools"],
     u: "https://www.youtube.com/shorts/abc123XYZ_9", dur: "1:20",
     s: "A short reflection for 8 February." },
   { t: "Border Sensitisation at Taveta", ty: "Event Highlights", th: ["Protection", "Partnership"],
@@ -37,6 +37,8 @@ const SAMPLES = [
   { t: "A Partner Speaks", ty: "Interview", th: ["Partnership"],
     u: "https://example.org/some/other/video", s: "Hosted elsewhere, opens on the original site." },
 ];
+
+const enc = (s) => s.replace(/&/g, "&amp;");
 
 const posts = SAMPLES.map((s, i) => {
   const d = new Date(Date.UTC(2026, 6 - i, 10 + i));
@@ -54,9 +56,12 @@ const posts = SAMPLES.map((s, i) => {
     },
     _embedded: {
       "wp:term": [
+        /* WordPress returns term names already HTML-encoded, so the stub does
+           too — "Prayer &amp; Reflection". Encoding them here is what proves
+           the page decodes once instead of escaping twice. */
         [{ id: 1, taxonomy: "category", name: "Videos", slug: "videos", parent: 0 },
-         { id: 20 + i, taxonomy: "category", name: s.ty, slug: s.ty.toLowerCase().replace(/\W+/g, "-"), parent: 1 }],
-        s.th.map((t, j) => ({ id: 300 + j, taxonomy: "post_tag", name: t, slug: t.toLowerCase().replace(/\W+/g, "-") })),
+         { id: 20 + i, taxonomy: "category", name: enc(s.ty), slug: s.ty.toLowerCase().replace(/\W+/g, "-"), parent: 1 }],
+        s.th.map((t, j) => ({ id: 300 + j, taxonomy: "post_tag", name: enc(t), slug: t.toLowerCase().replace(/\W+/g, "-") })),
       ],
     },
   };
@@ -120,14 +125,18 @@ async function newPage(deviceName) {
   /* Thumbnails and players live on hosts this sandbox cannot reach. Block
      them explicitly so the run is deterministic, and so every assertion
      below is really "works even with YouTube unreachable". */
-  await page.route(/ytimg\.com|youtube|vimeo|googlevideo/, (r) => r.abort());
-  return { ctx, page };
+  const asked = [];
+  await page.route(/ytimg\.com|youtube|vimeo|googlevideo/, (r) => {
+    asked.push(r.request().url());
+    r.abort();
+  });
+  return { ctx, page, asked };
 }
 
 /* ---- desktop ----------------------------------------------------------- */
 
 {
-  const { ctx, page } = await newPage();
+  const { ctx, page, asked } = await newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
 
@@ -142,13 +151,31 @@ async function newPage(deviceName) {
   const framesBefore = await page.locator("iframe").count();
   check("no player iframe exists before play", framesBefore === 0, `${framesBefore} iframes`);
 
-  const thumbSrc = await page.locator(".tkvid-card img").first().getAttribute("src");
-  check("YouTube thumbnail derived from the link, not uploaded",
-    /i\.ytimg\.com\/vi\/CeH4o97KKPM\//.test(thumbSrc || ""), thumbSrc || "none");
+  /* Thumbnails: derived from the link, sharpest size first, and the card
+     walks down the sizes as each one fails. Every request is blocked here,
+     so this also proves the walk terminates rather than looping. */
+  await page.waitForTimeout(400);
+  const shots = asked.filter((u) => u.includes("/vi/CeH4o97KKPM/"));
+  check("YouTube thumbnail derived from the link, not uploaded", shots.length > 0, `${shots.length}`);
+  check("sharpest frame asked for first", /maxresdefault/.test(shots[0] || ""), shots[0] || "none");
+  check("walks down to a smaller size when one is missing",
+    ["hq720", "sddefault", "hqdefault"].every((s) => shots.some((u) => u.includes(s))),
+    shots.map((u) => u.split("/").pop()).join(" > "));
 
-  /* A Vimeo link has no free thumbnail, so it must fall back gracefully. */
-  const fallbacks = await page.locator(".tkvid-fallback").count();
-  check("videos without a thumbnail get a branded cover", fallbacks >= 1, `${fallbacks}`);
+  /* Nothing may be left broken when every size fails — and a Vimeo link has
+     no free thumbnail at all, so the coloured cover carries both cases. */
+  const covers = await page.locator(".tkvid-card .tkvid-fallback").count();
+  check("every card keeps a cover when YouTube is unreachable", covers === 5, `${covers}`);
+  const leftovers = await page.locator(".tkvid-card img").count();
+  check("no broken image is left in the page", leftovers === 0, `${leftovers} images`);
+
+  /* Term names are decoded once, not escaped twice: "Youth &AMP; Schools"
+     was the visible symptom on the live page. */
+  const tagText = (await page.locator(".tkvid-tag").allTextContents()).join(" | ");
+  check("an ampersand in a tag reads as one", tagText.includes("Youth & Schools"), tagText);
+  const chipText = (await page.locator(".tkvid-chip").allTextContents()).join(" | ");
+  check("an ampersand in a type chip reads as one",
+    /Prayer & Reflection/.test(chipText) && !/&amp;|&AMP;/i.test(chipText), chipText);
 
   const chips = await page.locator(".tkvid-chip").count();
   check("type chips built from the data", chips === 6, `${chips} chips (All + 5 types)`);
@@ -199,6 +226,78 @@ async function newPage(deviceName) {
 
   await page.screenshot({ path: join(here, "shots", "videos-desktop.png"), fullPage: true });
   check("no uncaught JavaScript errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await ctx.close();
+}
+
+/* ---- thumbnails that do load -------------------------------------------
+   Everything above runs with YouTube unreachable. This block serves a real
+   1280x720 frame for maxresdefault and a 404 for every other size, which is
+   exactly what YouTube does, and measures what the reader actually sees.  */
+
+const frame = await (async () => {
+  const c = await browser.newContext();
+  const p = await c.newPage();
+  const url = await p.evaluate(() => {
+    const cv = document.createElement("canvas");
+    cv.width = 1280; cv.height = 720;
+    const x = cv.getContext("2d");
+    x.fillStyle = "#134a8e"; x.fillRect(0, 0, 1280, 720);
+    x.fillStyle = "#f7d14f"; x.beginPath(); x.arc(640, 360, 220, 0, 7); x.fill();
+    return cv.toDataURL("image/jpeg", 0.7);
+  });
+  await c.close();
+  return Buffer.from(url.split(",")[1], "base64");
+})();
+
+for (const [label, opts] of [
+  ["desktop", { viewport: { width: 1280, height: 900 } }],
+  ["360x800", { viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 }],
+]) {
+  const ctx = await browser.newContext(opts);
+  const page = await ctx.newPage();
+  await page.route(/ytimg\.com/, (r) => /maxresdefault/.test(r.request().url())
+    ? r.fulfill({ status: 200, contentType: "image/jpeg", body: frame })
+    : r.fulfill({ status: 404, contentType: "text/plain", body: "" }));
+  await page.route(/youtube|vimeo|googlevideo/, (r) => r.abort());
+
+  await page.goto(base, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector(".tkvid-grid .tkvid-card .tkvid-thumb img.is-on", { timeout: 10000 });
+  await page.waitForTimeout(500);   // let the quarter-second fade finish
+
+  const shot = await page.evaluate(() => {
+    const img = document.querySelector(".tkvid-grid .tkvid-card .tkvid-thumb img.is-on");
+    if (!img) return null;
+    const r = img.getBoundingClientRect();
+    return { w: r.width, h: r.height, nat: img.naturalWidth, op: getComputedStyle(img).opacity };
+  });
+  check(`${label}: the frame is visible once it decodes`, shot && shot.op === "1",
+    shot ? `opacity ${shot.op}` : "no image");
+  check(`${label}: the 1280x720 frame is the one served`, shot && shot.nat === 1280,
+    shot ? `${shot.nat}px` : "none");
+  check(`${label}: the thumbnail is 16:9, not letterboxed 4:3`,
+    shot && Math.abs(shot.w / shot.h - 16 / 9) < 0.02,
+    shot ? `${Math.round(shot.w)}x${Math.round(shot.h)}` : "none");
+
+  /* Bigger is the whole request. On a phone the card runs the full width of
+     the column; on desktop three per row rather than four. */
+  const floor = label === "desktop" ? 300 : 320;
+  check(`${label}: the thumbnail is at least ${floor}px wide`, shot && shot.w >= floor,
+    shot ? `${Math.round(shot.w)}px` : "none");
+
+  const feat = await page.evaluate(() => {
+    const n = document.querySelector(".tkvid-featured .tkvid-thumb");
+    return n ? n.getBoundingClientRect().width : 0;
+  });
+  check(`${label}: the lead video gets the widest frame on the page`,
+    feat >= (shot ? shot.w : 0), `${Math.round(feat)} vs ${shot ? Math.round(shot.w) : 0}`);
+
+  /* Retina: at 3x the phone still gets more source pixels than it paints. */
+  if (label !== "desktop") {
+    check("360x800: the frame still out-resolves a 3x screen",
+      shot && shot.nat >= shot.w * 3, shot ? `${shot.nat} vs ${Math.round(shot.w * 3)}` : "none");
+  }
+
+  await page.screenshot({ path: join(here, "shots", `videos-thumbs-${label.replace(/\s+/g, "")}.png`), fullPage: label === "desktop" });
   await ctx.close();
 }
 
