@@ -1358,6 +1358,13 @@ body.tkpub-locked { overflow: hidden; }
     org: "Talitha Kum Kenya"
   };
 
+  /* If plugin/tkpub-nonce-snippet.php is installed it also tells us the real
+     REST root, which matters on sites where a security plugin or unusual
+     permalinks have moved it away from /wp-json/. */
+  if (typeof window.tkpubRestRoot === "string" && window.tkpubRestRoot) {
+    CONFIG.restRoot = window.tkpubRestRoot;
+  }
+
   /* ------------------------------------------------------------------ */
   /* Tiny helpers                                                        */
   /* ------------------------------------------------------------------ */
@@ -2350,17 +2357,28 @@ body.tkpub-locked { overflow: hidden; }
    1. The panel is only *drawn* when WordPress has marked the visitor as
       logged in (it puts a `logged-in` class on <body>). This is cosmetic:
       it stops the panel appearing for the public, nothing more.
-   2. The panel only *works* after the user signs in with their WordPress
-      username and an Application Password (Users \u2192 Profile \u2192 Application
-      Passwords). Those credentials are checked against the REST API, and
-      the panel refuses to open unless the account can actually publish.
+   2. It then signs the user in one of two ways:
+
+      a) THE WORDPRESS SESSION THEY ALREADY HAVE. If a REST nonce is present
+         on the page, the panel uses the login cookie and skips the form
+         entirely. WordPress requires that nonce on any cookie-authenticated
+         write \u2014 it is what stops another site from making a logged-in
+         admin's browser publish things \u2014 and only the server can mint one.
+         See plugin/tkpub-nonce-snippet.php for the ten lines that print it.
+
+      b) AN APPLICATION PASSWORD, if no nonce is available. Users \u2192 Profile \u2192
+         Application Passwords. This always works, needs nothing on the
+         server, and stays as the fallback.
+
+      Either way the panel refuses to open unless the account can publish.
    3. The real security is WordPress itself. Every write below goes through
       the REST API, which independently re-checks the user's capabilities on
       the server. A visitor who forges the body class, edits this file in
       their browser, or calls the API directly still gets a 401.
 
-   Credentials are held in sessionStorage and disappear when the tab closes,
-   unless the user explicitly ticks "stay signed in on this device".
+   Application Password credentials are held in sessionStorage and disappear
+   when the tab closes, unless the user ticks "stay signed in on this device".
+   Nothing is stored at all in the cookie case \u2014 there is nothing to store.
    ========================================================================== */
 
 (function () {
@@ -2398,7 +2416,20 @@ body.tkpub-locked { overflow: hidden; }
   /* Auth                                                                */
   /* ------------------------------------------------------------------ */
 
-  var auth = { header: null, user: null, remember: false };
+  var auth = { header: null, nonce: null, user: null, remember: false };
+
+  /* A REST nonce, if the site prints one. Checked in order:
+       tkpubNonce      \u2014 set by plugin/tkpub-nonce-snippet.php (or the plugin)
+       wpApiSettings   \u2014 printed automatically when anything on the page
+                         enqueues wp-api-request / wp-api-fetch
+     Absent on most front ends, which is why the snippet exists. */
+  function findNonce() {
+    if (typeof window.tkpubNonce === "string" && window.tkpubNonce) return window.tkpubNonce;
+    if (window.wpApiSettings && window.wpApiSettings.nonce) return window.wpApiSettings.nonce;
+    return null;
+  }
+
+  function usingCookie() { return !!auth.nonce && !auth.header; }
 
   function loadAuth() {
     var raw = null;
@@ -2420,16 +2451,19 @@ body.tkpub-locked { overflow: hidden; }
   }
 
   function clearAuth() {
-    auth = { header: null, user: null, remember: false };
+    auth = { header: null, nonce: null, user: null, remember: false };
     try {
       sessionStorage.removeItem(STORE_KEY);
       localStorage.removeItem(STORE_KEY);
     } catch (e) { /* no-op */ }
   }
 
+  /* An Application Password wins if one was entered; otherwise the login
+     cookie is used and the nonce proves the request came from this page. */
   function authHeaders(extra) {
     var h = Object.assign({}, extra || {});
     if (auth.header) h.Authorization = auth.header;
+    else if (auth.nonce) h["X-WP-Nonce"] = auth.nonce;
     return h;
   }
 
@@ -2472,6 +2506,7 @@ body.tkpub-locked { overflow: hidden; }
       xhr.open("POST", TK.restUrl("wp/v2/media"), true);
       xhr.withCredentials = true;
       if (auth.header) xhr.setRequestHeader("Authorization", auth.header);
+      else if (auth.nonce) xhr.setRequestHeader("X-WP-Nonce", auth.nonce);
       xhr.setRequestHeader("Content-Disposition",
         'attachment; filename="' + file.name.replace(/["\\]/g, "") + '"');
       xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
@@ -2564,7 +2599,9 @@ body.tkpub-locked { overflow: hidden; }
     return '<div class="tkpub-login">' +
       '<div class="tkpub-callout">' +
         "<b>First time here?</b> You need an Application Password \u2014 it is separate from the " +
-        "password you use to log in, and it can be revoked on its own." +
+        "password you use to log in, and it can be revoked on its own. " +
+        "(Staff can skip this step entirely once the site prints a REST nonce \u2014 " +
+        "see tkpub-nonce-snippet.php.)" +
         "<ol>" +
           "<li>Open <b>Users \u2192 Profile</b> in the WordPress dashboard.</li>" +
           "<li>Scroll to <b>Application Passwords</b>.</li>" +
@@ -3091,14 +3128,28 @@ body.tkpub-locked { overflow: hidden; }
   /* Sign in / out                                                       */
   /* ------------------------------------------------------------------ */
 
+  /* The toggle button label has to follow the panel, not the sign-in step \u2014
+     signing in through the cookie happens while the panel is still closed. */
+  function toggleLabel() {
+    var host = $("#tkpub-admin");
+    return host && host.classList.contains("is-open") ? "Close panel" : "Open panel";
+  }
+
   function renderSignedIn() {
     $("#tkpub-admin-auth").hidden = true;
     $("#tkpub-admin-main").hidden = false;
-    $("#tkpub-admin-sub").textContent = "Add a document, classify it, publish it.";
+    $("#tkpub-admin-sub").textContent = usingCookie()
+      ? "Signed in with your WordPress session. Add a document, classify it, publish it."
+      : "Add a document, classify it, publish it.";
     $("#tkpub-admin-actions").innerHTML =
       '<span class="tkpub-who">Signed in as <b>' + esc(auth.user.name) + "</b></span>" +
-      '<button type="button" class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-signout>Sign out</button>' +
-      '<button type="button" class="tkpub-btn tkpub-btn-primary tkpub-btn-sm" data-toggle>Close panel</button>';
+      /* Nothing to sign out of in cookie mode \u2014 that is the WordPress
+         session itself, and logging people out of the site from here
+         would be a surprise. */
+      (usingCookie() ? ""
+        : '<button type="button" class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-signout>Sign out</button>') +
+      '<button type="button" class="tkpub-btn tkpub-btn-primary tkpub-btn-sm" data-toggle>' +
+        toggleLabel() + "</button>";
     resetForm();
     loadManageList();
   }
@@ -3109,7 +3160,19 @@ body.tkpub-locked { overflow: hidden; }
     $("#tkpub-admin-sub").textContent = "Staff only \u2014 visitors never see this.";
     $("#tkpub-admin-actions").innerHTML =
       '<button type="button" class="tkpub-btn tkpub-btn-primary tkpub-btn-sm" data-toggle>' +
-        ICON_LOCK + "Open panel</button>";
+        ICON_LOCK + toggleLabel() + "</button>";
+  }
+
+  /* Prefer the session the user already has; fall back to the form. */
+  function useCookieOrForm() {
+    auth.nonce = findNonce();
+    renderSignedOut();
+    if (!auth.nonce) return;
+    verify().then(renderSignedIn, function () {
+      /* Stale nonce, or an account that cannot publish. */
+      auth.nonce = null;
+      renderSignedOut();
+    });
   }
 
   function verify() {
@@ -3183,9 +3246,9 @@ body.tkpub-locked { overflow: hidden; }
     loadAuth();
     if (auth.header) {
       /* A stored credential may have been revoked since \u2014 check, do not trust. */
-      verify().then(renderSignedIn, function () { clearAuth(); renderSignedOut(); });
+      verify().then(renderSignedIn, function () { clearAuth(); useCookieOrForm(); });
     } else {
-      renderSignedOut();
+      useCookieOrForm();
     }
 
     host.addEventListener("submit", function (ev) {
@@ -3203,7 +3266,7 @@ body.tkpub-locked { overflow: hidden; }
         if (!host.classList.contains("is-open") && !auth.user) renderSignedOut();
       } else if (t.hasAttribute("data-signout")) {
         clearAuth();
-        renderSignedOut();
+        useCookieOrForm();
         toast("Signed out.", "ok");
       } else if (t.hasAttribute("data-tab")) {
         var tab = t.getAttribute("data-tab");

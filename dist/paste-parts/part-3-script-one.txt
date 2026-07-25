@@ -1,3 +1,4 @@
+<script>
 /* ==========================================================================
    Talitha Kum RAHT Kenya — Publications repository (public front-end)
 
@@ -1031,3 +1032,4 @@
     boot();
   }
 })();
+</script>

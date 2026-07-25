@@ -92,9 +92,19 @@ reactivate the plugin or switch the page back to \`mode: "posts"\`.
 * First release.
 `, "utf8");
 
+/* The one-click sign-in helper ships as its own tiny plugin, so it can be
+   installed on its own — it is useful whether or not the CPT plugin is. */
+const NONCE_SLUG = "tkpub-nonce-snippet";
+const nonceFolder = join(staging, NONCE_SLUG);
+await mkdir(nonceFolder, { recursive: true });
+await copyFile(join(root, "plugin", `${NONCE_SLUG}.php`), join(nonceFolder, `${NONCE_SLUG}.php`));
+
 await mkdir(join(root, "dist"), { recursive: true });
 await run("zip", ["-r", "-q", "-X", join(root, "dist", `${SLUG}.zip`), SLUG], { cwd: staging });
+await run("zip", ["-r", "-q", "-X", join(root, "dist", `${NONCE_SLUG}.zip`), NONCE_SLUG], { cwd: staging });
 await rm(staging, { recursive: true, force: true });
 
-const { size } = await readFile(join(root, "dist", `${SLUG}.zip`)).then((b) => ({ size: b.length }));
-console.log(`built dist/${SLUG}.zip  ${(size / 1024).toFixed(1)} KB`);
+for (const name of [SLUG, NONCE_SLUG]) {
+  const buf = await readFile(join(root, "dist", `${name}.zip`));
+  console.log(`built dist/${name}.zip  ${(buf.length / 1024).toFixed(1)} KB`);
+}

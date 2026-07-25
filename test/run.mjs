@@ -211,6 +211,60 @@ check("manage tab lists existing publications",
   (await page.locator("#tkpub-manage .tkpub-row").count()) > 0);
 await page.screenshot({ path: join(here, "shots", "07-admin-manage.png"), fullPage: true });
 
+/* ---- one-click sign in via the REST nonce ----------------------------- */
+
+const nonced = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+await nonced.addInitScript(() => { window.tkpubNonce = "abc123nonce"; });
+await nonced.goto(base, { waitUntil: "networkidle" });
+await nonced.waitForSelector(".tkpub-card");
+/* The panel starts closed, so the form is attached but not visible yet. */
+await nonced.waitForSelector("#tkpub-form", { state: "attached", timeout: 8000 });
+await nonced.waitForFunction(() => {
+  const a = document.querySelector("#tkpub-admin-auth");
+  return a && a.hidden;
+}, null, { timeout: 8000 });
+check("nonce present: panel signs itself in", true);
+
+const labelBefore = (await nonced.locator("[data-toggle]").innerText()).trim().toLowerCase();
+check("toggle says Open panel while it is still closed", labelBefore === "open panel", labelBefore);
+
+await nonced.click("[data-toggle]");
+await nonced.waitForTimeout(250);
+check("opening the panel goes straight to the form",
+  await nonced.locator("#tkpub-form").isVisible());
+check("no Application Password prompt shown",
+  (await nonced.locator("#tkpub-login-form").isVisible()) === false);
+check("sign-out button hidden in cookie mode",
+  (await nonced.locator("[data-signout]").count()) === 0);
+const nonceCalls = await nonced.evaluate(() =>
+  (window.__TKPUB_HEADERS__ || []).filter((c) => c.headers && c.headers["X-WP-Nonce"] === "abc123nonce").length);
+check("X-WP-Nonce sent on authenticated calls", nonceCalls > 0, `${nonceCalls} calls carried it`);
+const authHeaderCalls = await nonced.evaluate(() =>
+  (window.__TKPUB_HEADERS__ || []).filter((c) => c.headers && c.headers.Authorization).length);
+check("no Basic auth header sent in cookie mode", authHeaderCalls === 0, `${authHeaderCalls} sent`);
+check("toggle label follows the panel",
+  (await nonced.locator("[data-toggle]").innerText()).trim().toLowerCase() === "close panel",
+  await nonced.locator("[data-toggle]").innerText());
+await nonced.screenshot({ path: join(here, "shots", "09-oneclick.png"), fullPage: false });
+await nonced.close();
+
+/* A stale or rejected nonce must fall back to the form, not lock staff out. */
+const stale = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+await stale.addInitScript(() => {
+  window.tkpubNonce = "stale";
+  window.__TKPUB_REJECT_ME__ = true;
+});
+await stale.goto(base, { waitUntil: "networkidle" });
+await stale.waitForSelector(".tkpub-card");
+await stale.waitForTimeout(700);
+check("stale nonce falls back to the sign-in form",
+  await stale.evaluate(() => {
+    const a = document.querySelector("#tkpub-admin-auth");
+    const m = document.querySelector("#tkpub-admin-main");
+    return !!a && !a.hidden && !!m && m.hidden;
+  }));
+await stale.close();
+
 /* ---- mobile ----------------------------------------------------------- */
 
 const mob = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

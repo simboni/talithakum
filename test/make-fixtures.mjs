@@ -173,13 +173,23 @@ async function main() {
 window.__TKPUB_FIXTURE__ = ${JSON.stringify(posts)};
 (function () {
   var real = window.fetch.bind(window);
+
+  /* Every request header the page sends, so tests can assert on auth. */
+  window.__TKPUB_HEADERS__ = [];
+
   window.fetch = function (url, opts) {
     var u = String(url);
-    function reply(body, headers) {
+    window.__TKPUB_HEADERS__.push({ url: u, headers: (opts && opts.headers) || {} });
+
+    function reply(body, headers, status) {
       return Promise.resolve(new Response(JSON.stringify(body), {
-        status: 200,
+        status: status || 200,
         headers: Object.assign({ "Content-Type": "application/json" }, headers || {})
       }));
+    }
+    /* Lets a test simulate a rejected cookie/nonce. */
+    if (window.__TKPUB_REJECT_ME__ && u.indexOf("/users/me") > -1) {
+      return reply({ message: "Cookie check failed" }, {}, 401);
     }
     if (u.indexOf("/wp-json/wp/v2/categories") > -1) {
       return reply([{ id: 1, name: "Publications", slug: "publications", parent: 0 }], { "X-WP-TotalPages": "1" });
