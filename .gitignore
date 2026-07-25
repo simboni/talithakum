@@ -9,3 +9,7 @@ test/package-lock.json
 
 node_modules/
 .DS_Store
+
+# Plugin zip is a build output — rebuild with: node build-plugin-zip.mjs
+# (kept in the repo so it can be downloaded without Node installed)
+dist/_staging/
