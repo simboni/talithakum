@@ -1,0 +1,11 @@
+# Test scaffolding — regenerate with: cd test && npm install && node make-fixtures.mjs
+test/node_modules/
+test/vendor/
+test/fixtures/
+test/shots/
+test/harness.html
+test/package.json
+test/package-lock.json
+
+node_modules/
+.DS_Store

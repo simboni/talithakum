@@ -1,0 +1,40 @@
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { chromium } from "playwright";
+const server = createServer(async (req,res)=>{
+  try { res.writeHead(200,{"Content-Type":"text/html"});
+        res.end(await readFile("/workspace/talithakum/preview/publications-preview.html")); }
+  catch { res.writeHead(404).end(); }
+});
+await new Promise(r=>server.listen(4174,r));
+const b = await chromium.launch({executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome"});
+const p = await b.newPage({viewport:{width:1280,height:1100}});
+const errs=[]; p.on("pageerror",e=>errs.push(String(e)));
+p.on("console",m=>{ if(m.type()==="error"){const u=(m.location()||{}).url||""; if(!u.endsWith("/favicon.ico")) errs.push(m.text()+" @"+u);} });
+await p.goto("http://127.0.0.1:4174/",{waitUntil:"networkidle"});
+await p.waitForSelector(".tkpub-card",{timeout:10000});
+console.log("cards:", await p.locator("#tkpub-grid .tkpub-card").count());
+console.log("count:", (await p.locator("#tkpub-count").innerText()).trim());
+console.log("font:", await p.evaluate(()=>getComputedStyle(document.querySelector(".tkpub-title")).fontFamily));
+await p.screenshot({path:"shots/p1-top.png", clip:{x:0,y:0,width:1280,height:1100}});
+await p.locator("#tkpub-grid .tkpub-card [data-open]").first().click();
+await p.waitForSelector("#tkpub-modal.is-open");
+await p.waitForTimeout(600);
+console.log("mock pages:", await p.locator("#tkpub-stage .pv-page").count());
+console.log("pager:", (await p.locator(".tkpub-pagecount").innerText()).trim());
+await p.screenshot({path:"shots/p2-reader.png"});
+await p.click("[data-next]"); await p.waitForTimeout(700);
+console.log("after next, input =", await p.inputValue("#tkpub-page-input"));
+await p.click("[data-zoomin]"); await p.waitForTimeout(300);
+console.log("zoom:", (await p.locator(".tkpub-zoomlevel").innerText()).trim());
+await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+await p.click("[data-toggle]"); await p.waitForTimeout(300);
+await p.fill("#tkpub-user","agnes"); await p.fill("#tkpub-pass","aaaa bbbb cccc dddd");
+await p.click("#tkpub-login-form button[type=submit]");
+await p.waitForSelector("#tkpub-form",{timeout:8000});
+console.log("admin form reachable: yes");
+await p.screenshot({path:"shots/p3-admin.png", fullPage:false});
+const ov = await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+console.log("h-overflow:", ov);
+console.log("errors:", errs.length? errs.slice(0,4): "none");
+await b.close(); server.close();
