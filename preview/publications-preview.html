@@ -180,10 +180,25 @@ body {
   font-size: .76em; color: #a9a29b; letter-spacing: .04em;
 }
 
+/* On a phone the framing is not the point — the page is. Everything above
+   the browser frame is compressed so the real thing is reachable in one
+   short scroll, which is also how the audience will meet it. */
 @media (max-width: 640px) {
-  .pv-wrap { padding: 26px 12px 48px; }
-  .pv-screen { padding: 20px 14px 30px; }
-  .pv-frame { border-radius: 12px; }
+  .pv-wrap { padding: 20px 10px 40px; }
+  .pv-intro { margin-bottom: 18px; }
+  .pv-intro h1 { font-size: 27px; line-height: 1.16; margin-bottom: 8px; }
+  .pv-intro p { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .pv-eyebrow { margin-bottom: 10px; font-size: 11px; }
+  .pv-try { gap: 6px; margin-top: 14px; }
+  .pv-try li { font-size: 12px; padding: 6px 11px; }
+  .pv-screen { padding: 14px 10px 24px; }
+  .pv-frame { border-radius: 10px; }
+  .pv-bar { padding: 9px 11px; gap: 10px; }
+  .pv-url { font-size: 11.5px; padding: 5px 11px; }
+  .pv-dots { display: none; }          /* pure decoration, and it costs width */
+  .pv-foot { margin-top: 20px; gap: 12px; }
+  .pv-card { padding: 14px 16px; }
+  .pv-card p { font-size: 13.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
@@ -697,14 +712,30 @@ body {
    PDF viewer modal
    ========================================================================== */
 
+/* The reader sits above everything, including a theme's floating widgets.
+   z-index is deliberately near the maximum: BigHearts' back-to-top button
+   was drawing over the top of it. */
 .tkpub-modal {
-  position: fixed; inset: 0; z-index: 100000;
+  position: fixed; inset: 0; z-index: 2147483000;
   display: none;
-  background: rgba(28, 24, 22, .8);
+  background: rgba(28, 24, 22, .82);
   backdrop-filter: blur(3px);
   padding: 22px;
 }
 .tkpub-modal.is-open { display: flex; align-items: center; justify-content: center; }
+
+/* Locking the body by position:fixed rather than overflow:hidden — iOS
+   Safari ignores the latter and happily scrolls the page behind the reader.
+   publications.js stores and restores the scroll position around this. */
+body.tkpub-locked {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+/* Floating theme widgets would otherwise punch through the reader. */
+body.tkpub-locked [class*="back-to-top"],
+body.tkpub-locked [id*="back-to-top"],
+body.tkpub-locked [class*="backtotop"] { display: none !important; }
 
 .tkpub-modal-panel {
   background: var(--tk-surface);
@@ -719,68 +750,102 @@ body {
 @keyframes tkpub-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } }
 @media (prefers-reduced-motion: reduce) { .tkpub-modal-panel { animation: none; } }
 
+/* --- Title bar -----------------------------------------------------------
+   Three fixed columns. The title can only ever be one line plus one line of
+   meta, so the bar has a predictable height and cannot collapse into a
+   column of single words when the title is long.
+   ------------------------------------------------------------------------ */
 .tkpub-modal-bar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--tk-line);
   background: var(--tk-canvas);
   flex-shrink: 0;
 }
-.tkpub-modal-titles { min-width: 0; flex: 1; }
+.tkpub-modal-titles { min-width: 0; }
 .tkpub-modal-titles h2 {
-  font-size: 15.5px; font-weight: 700; color: var(--tk-deep);
+  font-size: 15px; font-weight: 700; color: var(--tk-deep); line-height: 1.3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.tkpub-modal-titles p { font-size: 12.5px; color: var(--tk-muted); }
-.tkpub-modal-tools { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tkpub-modal-titles p {
+  font-size: 12px; color: var(--tk-muted); line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .tkpub-icbtn {
   border: 1px solid transparent; background: none; color: var(--tk-body);
-  width: 34px; height: 34px; border-radius: 8px;
-  display: grid; place-items: center;
+  min-width: 40px; height: 40px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 0 8px;
+  text-decoration: none;
   transition: background .15s, color .15s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
-.tkpub-icbtn svg { width: 17px; height: 17px; }
+.tkpub-icbtn svg { width: 18px; height: 18px; flex-shrink: 0; }
 .tkpub-icbtn:hover { background: var(--tk-line-soft); color: var(--tk-deep); }
-.tkpub-icbtn[disabled] { opacity: .35; pointer-events: none; }
+.tkpub-icbtn[disabled] { opacity: .32; pointer-events: none; }
 .tkpub-icbtn.is-close:hover { background: #fbe9e7; color: var(--tk-alert); }
-
-.tkpub-pager {
-  display: flex; align-items: center; gap: 4px;
-  background: var(--tk-surface);
-  border: 1px solid var(--tk-line);
-  border-radius: 8px;
-  padding: 2px;
+.tkpub-icbtn > span {
+  font-family: var(--tk-head-font);
+  font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .01em;
 }
-.tkpub-pager input {
-  width: 44px; text-align: center; font: inherit; font-size: 13px;
-  border: 0; background: none; color: var(--tk-ink);
-  padding: 5px 2px;
-}
-.tkpub-pager input:focus { outline: none; background: var(--tk-line-soft); border-radius: 4px; }
-.tkpub-pager .tkpub-pagecount { font-size: 13px; color: var(--tk-muted); padding-right: 8px; }
-.tkpub-zoomlevel { font-size: 13px; color: var(--tk-muted); min-width: 44px; text-align: center; }
 
+/* --- Stage ---------------------------------------------------------------
+   One continuous scroll of pages. overscroll-behavior stops a flick at the
+   end of the document from scrolling the page underneath.
+   ------------------------------------------------------------------------ */
 .tkpub-modal-stage {
   flex: 1;
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   background: #4a4442;
-  padding: 20px;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 16px;
   -webkit-overflow-scrolling: touch;
+  /* The pinch handler manages zoom itself; letting the browser also
+     double-tap-zoom the page makes both fight. */
+  touch-action: pan-x pan-y;
 }
-.tkpub-modal-stage canvas {
+.tkpub-modal-stage:not(.is-doc) {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+.tkpub-pages {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px;
+  min-width: min-content;
+  margin: 0 auto;
+}
+.tkpub-pg {
+  position: relative;
+  width: 100%;
   background: #fff;
-  box-shadow: 0 6px 22px rgba(0,0,0,.32);
-  max-width: 100%;
-  height: auto;
   border-radius: 2px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.34);
+  flex-shrink: 0;
+  overflow: hidden;
 }
+/* A faint sheet colour until the canvas lands, so scrolling ahead shows
+   pages rather than holes. */
+.tkpub-pg::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fff, #f3efec);
+  transition: opacity .18s;
+}
+.tkpub-pg.is-ready::after { opacity: 0; }
+.tkpub-pg canvas { display: block; width: 100%; height: auto; position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .tkpub-pg::after { transition: none; } }
+
 .tkpub-modal-stage iframe { width: 100%; height: 100%; border: 0; background: #fff; border-radius: 4px; }
 .tkpub-modal-stage.is-frame { padding: 0; display: block; }
 
 .tkpub-viewer-msg {
-  color: #fff; text-align: center; padding: 44px 24px; margin: auto;
+  color: #fff; text-align: center; padding: 40px 24px; margin: auto;
   max-width: 40ch;
 }
 .tkpub-viewer-msg h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #fff; }
@@ -796,17 +861,44 @@ body {
 }
 @keyframes tkpub-spin { to { transform: rotate(360deg); } }
 
+/* --- Control bar --------------------------------------------------------- */
+
 .tkpub-modal-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--tk-line);
   background: var(--tk-canvas);
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
-.tkpub-modal-foot .tkpub-meta { margin: 0; }
+/* Paging and zoom are meaningless until a document has actually rendered. */
+.tkpub-modal:not(.has-controls) .tkpub-pager,
+.tkpub-modal:not(.has-controls) .tkpub-zoomgroup { visibility: hidden; }
 
-body.tkpub-locked { overflow: hidden; }
+.tkpub-pager, .tkpub-zoomgroup {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-line);
+  border-radius: 10px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+.tkpub-pager input {
+  width: 40px; text-align: center; font: inherit; font-size: 16px;
+  border: 0; background: none; color: var(--tk-ink);
+  padding: 6px 2px;
+}
+.tkpub-pager input:focus { outline: none; background: var(--tk-line-soft); border-radius: 5px; }
+.tkpub-pager .tkpub-pagecount {
+  font-size: 13px; color: var(--tk-muted); padding-right: 8px; white-space: nowrap;
+}
+.tkpub-zoomlevel {
+  font-size: 13px; color: var(--tk-muted); min-width: 46px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.tkpub-modal-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tkpub-modal-actions .is-wide { white-space: nowrap; }
 
 /* ==========================================================================
    Toasts
@@ -1085,12 +1177,80 @@ body.tkpub-locked { overflow: hidden; }
   }
   .tkpub-grid.is-list .tkpub-actions { padding-top: 4px; }
   .tkpub-views { margin-left: 0; }
-  .tkpub-modal { padding: 0; }
-  .tkpub-modal-panel { height: 100%; width: 100%; border-radius: 0; }
-  .tkpub-modal-stage { padding: 10px; }
   .tkpub-admin-bar .tkpub-admin-actions { margin-left: 0; width: 100%; }
   .tkpub-toasts { left: 14px; right: 14px; bottom: 14px; }
   .tkpub-toast { max-width: none; }
+}
+
+/* ==========================================================================
+   The reader on a phone
+
+   Nearly all readers are on one, so this is the case that has to be right,
+   not the fallback. The panel takes the whole screen, the title bar keeps a
+   fixed height, and everything that is not paging, zooming or copying a link
+   is removed so the three remaining controls can be full-size touch targets.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .tkpub-modal { padding: 0; }
+
+  .tkpub-modal-panel {
+    width: 100%; border-radius: 0;
+    height: 100vh;
+    /* dvh tracks the browser chrome collapsing as you scroll; vh does not,
+       and the control bar ends up under the address bar without it. */
+    height: 100dvh;
+    animation: none;
+  }
+
+  .tkpub-modal-bar { padding: 8px 8px 8px 4px; gap: 6px; }
+  .tkpub-modal-titles h2 { font-size: 14.5px; }
+  .tkpub-modal-titles p { font-size: 11.5px; }
+
+  .tkpub-modal-stage { padding: 8px; }
+  .tkpub-pages { gap: 10px; }
+
+  .tkpub-modal-foot { padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Download already sits in the title bar, so the labelled button here is
+     redundant. Full screen stays: opening the PDF in the phone's own viewer
+     is the escape hatch when rendering fails or someone wants to print, and
+     it is the one control that cannot be replaced by something else. */
+  .tkpub-modal-actions .is-wide,
+  .tkpub-zoomlevel { display: none; }
+  .tkpub-modal-actions .tkpub-icbtn > span { display: none; }
+
+  /* 44px is the floor for a touch target, so nothing here goes below it —
+     the pager gives up width instead. */
+  .tkpub-icbtn { min-width: 44px; height: 44px; padding: 0 5px; }
+  .tkpub-pager input {
+    min-width: 44px; min-height: 44px; width: 44px; padding: 0;
+    font-size: 16px;   /* below 16 and iOS zooms the page on focus */
+  }
+  .tkpub-pager .tkpub-pagecount { padding-right: 5px; font-size: 12.5px; }
+  .tkpub-modal-foot { gap: 8px; }
+}
+
+@media (max-width: 380px) {
+  .tkpub-modal-titles p { display: none; }   /* title alone; every mm counts */
+  /* Last two to go, in this order. The link is already in the address bar and
+     reachable through the phone's share sheet; the page total is already in
+     the title bar meta line. Both are duplicates — the touch targets are not,
+     so they keep their full size. */
+  .tkpub-modal-actions [data-copy],
+  .tkpub-pager .tkpub-pagecount { display: none; }
+  .tkpub-icbtn { padding: 0 2px; }
+  .tkpub-modal-foot { gap: 6px; }
+}
+
+/* A phone held sideways has almost no height to spare — give the document
+   all of it and shrink the two bars. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 480px) {
+  .tkpub-modal-bar { padding: 4px 8px; }
+  .tkpub-modal-titles p { display: none; }
+  .tkpub-modal-foot { padding: 4px 8px; }
+  .tkpub-icbtn { height: 38px; min-width: 38px; }
+  .tkpub-modal-stage { padding: 6px; }
 }
 
 @media print {
@@ -1104,16 +1264,14 @@ body.tkpub-locked { overflow: hidden; }
     <span class="pv-eyebrow">Design preview</span>
     <h1>A publications library for Talitha Kum Kenya</h1>
     <p>
-      This is the working page, not a picture of one. Search, filters, the layout
-      switch and the document reader are all live &#8212; try them. It is styled from
-      the site's own BigHearts settings, so the colours, the Quicksand headings
-      and the Nunito Sans body text are the ones already in use on
-      talithakumraht.org.
+      This is the working page, not a picture of one &#8212; search, filters and the
+      document reader are all live. Best viewed on a phone, which is where
+      almost all of its readers will be.
     </p>
     <p>
-      The twelve documents below are <b>sample content</b> written to show the
-      layout. The reader draws a representative page rather than a real PDF,
-      because this preview runs with no network access.
+      The twelve documents are <b>sample content</b>, and the reader draws a
+      representative page rather than a real PDF because this preview runs with
+      no network access.
     </p>
     <ul class="pv-try">
       <li><b>Search</b> for "migration"</li>
@@ -1174,11 +1332,13 @@ body.tkpub-locked { overflow: hidden; }
       <select id="tkpub-lang" class="tkpub-select" hidden><option value="">All languages</option></select>
 
       <label class="tkpub-sr" for="tkpub-sort">Sort</label>
+      <!-- Deliberately terse: at 320px "Newest first" truncates to
+           "Newest firs&#8230;", which reads as broken rather than abbreviated. -->
       <select id="tkpub-sort" class="tkpub-select">
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
-        <option value="az">Title A&ndash;Z</option>
-        <option value="za">Title Z&ndash;A</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="az">A&ndash;Z</option>
+        <option value="za">Z&ndash;A</option>
       </select>
 
       <div class="tkpub-views" role="group" aria-label="Change the layout">
@@ -1212,29 +1372,46 @@ body.tkpub-locked { overflow: hidden; }
 
 </div>
 
-<!-- PDF viewer. Lives outside .tkpub-toolbar so it can sit above everything. -->
+<!-- Document reader.
+     Layout is deliberately three fixed bands: a title bar that never grows, a
+     scrolling stage, and a control bar. On a phone the title bar previously
+     collapsed into a tall column of single words because the controls were
+     competing with it for width &#8212; the controls now live at the bottom, where
+     thumbs are, and the title gets the whole top row to itself. -->
 <div class="tkpub tkpub-modal" id="tkpub-modal" role="dialog" aria-modal="true" aria-label="Document reader">
   <div class="tkpub-modal-panel">
 
     <div class="tkpub-modal-bar">
+      <button type="button" class="tkpub-icbtn is-close" data-close aria-label="Close the reader">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+
       <div class="tkpub-modal-titles">
         <h2></h2>
         <p></p>
       </div>
 
-      <div class="tkpub-modal-tools">
-        <div class="tkpub-pager">
-          <button type="button" class="tkpub-icbtn" data-prev aria-label="Previous page">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
-          </button>
-          <label class="tkpub-sr" for="tkpub-page-input">Page number</label>
-          <input type="text" id="tkpub-page-input" inputmode="numeric" value="1">
-          <span class="tkpub-pagecount">/ 1</span>
-          <button type="button" class="tkpub-icbtn" data-next aria-label="Next page">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
-          </button>
-        </div>
+      <a class="tkpub-icbtn is-grab" data-dl href="#" download aria-label="Download this document">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7.5 11 4.5 4.5 4.5-4.5"></path><path d="M4 20h16"></path></svg>
+      </a>
+    </div>
 
+    <div class="tkpub-modal-stage" id="tkpub-stage"></div>
+
+    <div class="tkpub-modal-foot">
+      <div class="tkpub-pager">
+        <button type="button" class="tkpub-icbtn" data-prev aria-label="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
+        </button>
+        <label class="tkpub-sr" for="tkpub-page-input">Page number</label>
+        <input type="text" id="tkpub-page-input" inputmode="numeric" pattern="[0-9]*" value="1">
+        <span class="tkpub-pagecount">/ 1</span>
+        <button type="button" class="tkpub-icbtn" data-next aria-label="Next page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
+        </button>
+      </div>
+
+      <div class="tkpub-zoomgroup">
         <button type="button" class="tkpub-icbtn tkpub-zoom" data-zoomout aria-label="Zoom out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M8.5 11h5M20 20l-3.5-3.5"></path></svg>
         </button>
@@ -1242,27 +1419,18 @@ body.tkpub-locked { overflow: hidden; }
         <button type="button" class="tkpub-icbtn tkpub-zoom" data-zoomin aria-label="Zoom in">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M11 8.5v5M8.5 11h5M20 20l-3.5-3.5"></path></svg>
         </button>
-
-        <button type="button" class="tkpub-icbtn is-close" data-close aria-label="Close the reader">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-        </button>
       </div>
-    </div>
 
-    <div class="tkpub-modal-stage" id="tkpub-stage"></div>
-
-    <div class="tkpub-modal-foot">
-      <div id="tkpub-modal-foot-meta"></div>
-      <div class="tkpub-actions" style="padding:0;margin:0">
-        <button type="button" class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-copy>
+      <div class="tkpub-modal-actions">
+        <button type="button" class="tkpub-icbtn" data-copy aria-label="Copy a link to this document">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
-          Copy link
+          <span>Copy link</span>
         </button>
-        <a class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-tab href="#" target="_blank" rel="noopener">
+        <a class="tkpub-icbtn" data-tab href="#" target="_blank" rel="noopener" aria-label="Open the PDF in a new tab">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4 11 13"></path><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path></svg>
-          Full screen
+          <span>Full screen</span>
         </a>
-        <a class="tkpub-btn tkpub-btn-primary tkpub-btn-sm" data-dl href="#" download>
+        <a class="tkpub-btn tkpub-btn-primary tkpub-btn-sm is-wide" data-dl href="#" download>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7.5 11 4.5 4.5 4.5-4.5"></path><path d="M4 20h16"></path></svg>
           Download
         </a>
@@ -1860,10 +2028,31 @@ body.tkpub-locked { overflow: hidden; }
   /* PDF viewer                                                          */
   /* ------------------------------------------------------------------ */
 
+  /* The reader is a continuous vertical scroll of rendered pages, not a
+     one-page-at-a-time flipbook. On a phone \u2014 which is where nearly all of
+     these documents are read \u2014 scrolling is the gesture people already have,
+     and it removes the need to hit a small "next" target between every page.
+
+     Pages are rendered lazily and unrendered again once they are well out of
+     view, so a 48-page annual report does not hold 48 canvases in memory on a
+     mid-range Android. */
   var viewer = {
-    pub: null, doc: null, page: 1, zoom: 1, fitWidth: true,
-    lastFocus: null, rendering: false, pending: null, token: 0
+    pub: null,
+    doc: null,
+    pages: [],        // { shell, canvas, w, h, rendered, task }
+    current: 1,
+    fit: 1,           // scale at which a page fills the stage width
+    zoom: 1,          // user multiplier on top of fit
+    lastFocus: null,
+    token: 0,
+    io: null,
+    scrollRaf: 0
   };
+
+  var MAX_ZOOM = 4;
+  var MIN_ZOOM = 0.5;
+  /* How many pages either side of the viewport stay rendered. */
+  var KEEP = 2;
 
   var pdfjsPromise = null;
 
@@ -1890,23 +2079,34 @@ body.tkpub-locked { overflow: hidden; }
     if (!pub || !pub.pdf) return;
 
     viewer.pub = pub;
-    viewer.page = 1;
+    viewer.current = 1;
     viewer.zoom = 1;
-    viewer.fitWidth = true;
     viewer.doc = null;
+    viewer.pages = [];
     viewer.token++;
     viewer.lastFocus = document.activeElement;
 
     $(".tkpub-modal-titles h2", el.modal).textContent = pub.title;
+    /* Kept to one short line: on a phone this sits under a truncated title
+       and anything longer pushes the reading area down the screen. */
     $(".tkpub-modal-titles p", el.modal).textContent =
-      [pub.type, prettyDate(pub.date), pub.issuer].filter(Boolean).join("  \u00b7  ");
-    $("[data-dl]", el.modal).href = pub.pdf;
-    $("[data-dl]", el.modal).setAttribute("data-download", pub.id);
+      [pub.type, pub.pages ? pub.pages + " pages" : "", bytes(pub.size)]
+        .filter(Boolean).join("  \u00b7  ");
+
+    $$("[data-dl]", el.modal).forEach(function (a) {
+      a.href = pub.pdf;
+      a.setAttribute("data-download", pub.id);
+    });
     $("[data-tab]", el.modal).href = pub.pdf;
-    el.modalFoot.innerHTML = metaMarkup(pub);
+
+    /* Remember where the page was, so closing the reader puts the reader
+       back exactly where they were in the list. iOS in particular will
+       otherwise jump to the top when the body is unlocked. */
+    viewer.pageScroll = window.pageYOffset || document.documentElement.scrollTop || 0;
 
     el.modal.classList.add("is-open");
     document.body.classList.add("tkpub-locked");
+    document.body.style.top = "-" + viewer.pageScroll + "px";
     $(".tkpub-icbtn.is-close", el.modal).focus();
 
     if (pushUrl !== false) {
@@ -1924,7 +2124,11 @@ body.tkpub-locked { overflow: hidden; }
     if (!el.modal.classList.contains("is-open")) return;
     el.modal.classList.remove("is-open");
     document.body.classList.remove("tkpub-locked");
+    document.body.style.top = "";
+    window.scrollTo(0, viewer.pageScroll || 0);
+
     viewer.token++;
+    teardownPages();
     viewer.doc = null;
     el.stage.innerHTML = "";
     if (viewer.lastFocus && viewer.lastFocus.focus) viewer.lastFocus.focus();
@@ -1950,7 +2154,7 @@ body.tkpub-locked { overflow: hidden; }
   function fallbackFrame(reason) {
     var pub = viewer.pub;
     var mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    setPagerEnabled(false);
+    setControls(false);
 
     if (mobile) {
       stageMessage(
@@ -1967,12 +2171,25 @@ body.tkpub-locked { overflow: hidden; }
       esc(pub.title) + '" loading="lazy"></iframe>';
   }
 
-  function setPagerEnabled(on, total) {
-    var pager = $(".tkpub-pager", el.modal);
-    pager.style.display = on ? "" : "none";
-    $$(".tkpub-zoom", el.modal).forEach(function (b) { b.style.display = on ? "" : "none"; });
-    el.zoomLevel.style.display = on ? "" : "none";
-    if (on && total) $(".tkpub-pagecount", el.modal).textContent = "/ " + total;
+  function setControls(on, total) {
+    el.modal.classList.toggle("has-controls", !!on);
+    if (on && total) {
+      $(".tkpub-pagecount", el.modal).textContent = "/ " + total;
+      $(".tkpub-pager input", el.modal).max = String(total);
+    }
+  }
+
+  /* Cancel in-flight renders and drop canvases. Called on close and on
+     reopen; without it a fast close/open leaves orphaned render tasks
+     writing into detached canvases. */
+  function teardownPages() {
+    if (viewer.io) { viewer.io.disconnect(); viewer.io = null; }
+    viewer.pages.forEach(function (p) {
+      if (p.task && p.task.cancel) { try { p.task.cancel(); } catch (e) { /* already done */ } }
+      p.task = null;
+      p.rendered = false;
+    });
+    viewer.pages = [];
   }
 
   function renderStage() {
@@ -1980,13 +2197,13 @@ body.tkpub-locked { overflow: hidden; }
     var token = viewer.token;
 
     stageMessage('<div class="tkpub-spinner"></div><p>Loading document\u2026</p>');
-    setPagerEnabled(false);
+    setControls(false);
 
     /* Optional escape hatch: set CONFIG.renderer to a function and it takes
        over the viewer body completely. Used by the offline design preview,
        and there if you ever want to self-host a different PDF engine. */
     if (typeof CONFIG.renderer === "function") {
-      CONFIG.renderer({ stage: el.stage, modal: el.modal, pub: pub, setPager: setPagerEnabled });
+      CONFIG.renderer({ stage: el.stage, modal: el.modal, pub: pub, setPager: setControls });
       return;
     }
 
@@ -1998,11 +2215,7 @@ body.tkpub-locked { overflow: hidden; }
       .then(function (doc) {
         if (!doc || token !== viewer.token) return;
         viewer.doc = doc;
-        el.stage.className = "tkpub-modal-stage";
-        el.stage.innerHTML = "<canvas></canvas>";
-        setPagerEnabled(true, doc.numPages);
-        $(".tkpub-pager input", el.modal).value = "1";
-        renderPage(1);
+        return buildPages(doc);
       })
       .catch(function (err) {
         if (token !== viewer.token) return;
@@ -2012,59 +2225,274 @@ body.tkpub-locked { overflow: hidden; }
       });
   }
 
-  function renderPage(n) {
-    if (!viewer.doc) return;
-    var total = viewer.doc.numPages;
-    n = Math.min(Math.max(1, n | 0), total);
-    viewer.page = n;
+  /* ---- building the scroll ------------------------------------------- */
 
-    if (viewer.rendering) { viewer.pending = n; return; }
-    viewer.rendering = true;
-
+  /* Every page gets a correctly-proportioned placeholder up front, so the
+     scrollbar is honest from the first frame and the document does not jump
+     around as pages finish rendering. */
+  function buildPages(doc) {
     var token = viewer.token;
-    viewer.doc.getPage(n).then(function (page) {
-      if (token !== viewer.token) { viewer.rendering = false; return; }
 
-      var canvas = $("canvas", el.stage);
-      if (!canvas) { viewer.rendering = false; return; }
+    return doc.getPage(1).then(function (first) {
+      if (token !== viewer.token) return;
 
-      var base = page.getViewport({ scale: 1 });
-      var avail = el.stage.clientWidth - 40;
-      var scale = viewer.fitWidth ? Math.min(avail / base.width, 2) : viewer.zoom;
-      /* Render at device resolution so text is crisp on retina screens. */
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      var vp = page.getViewport({ scale: scale * dpr });
+      var base = first.getViewport({ scale: 1 });
+      viewer.fit = fitScale(base.width);
 
-      canvas.width = vp.width;
-      canvas.height = vp.height;
-      canvas.style.width = (vp.width / dpr) + "px";
-      canvas.style.height = (vp.height / dpr) + "px";
+      el.stage.className = "tkpub-modal-stage is-doc";
+      el.stage.innerHTML = '<div class="tkpub-pages"></div>';
+      var wrap = $(".tkpub-pages", el.stage);
 
-      return page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise
-        .then(function () {
-          viewer.zoom = scale;
-          el.zoomLevel.textContent = Math.round(scale * 100) + "%";
-          $(".tkpub-pager input", el.modal).value = String(n);
-          $("[data-prev]", el.modal).disabled = n <= 1;
-          $("[data-next]", el.modal).disabled = n >= total;
-        });
-    }).catch(function () {
-      fallbackFrame("This page could not be rendered.");
-    }).then(function () {
-      viewer.rendering = false;
-      if (viewer.pending !== null && viewer.pending !== undefined) {
-        var next = viewer.pending;
-        viewer.pending = null;
-        renderPage(next);
+      viewer.pages = [];
+      for (var i = 1; i <= doc.numPages; i++) {
+        var shell = document.createElement("div");
+        shell.className = "tkpub-pg";
+        shell.setAttribute("data-page", i);
+        /* Assume uniform page size until proven otherwise \u2014 true of every
+           document these are, and it avoids N getPage() calls up front. */
+        shell.style.aspectRatio = base.width + " / " + base.height;
+        var canvas = document.createElement("canvas");
+        shell.appendChild(canvas);
+        wrap.appendChild(shell);
+        viewer.pages.push({ shell: shell, canvas: canvas, rendered: false, task: null });
       }
+
+      applyZoom();
+      setControls(true, doc.numPages);
+      $(".tkpub-pager input", el.modal).value = "1";
+
+      observePages();
+      bindStageGestures();
+      updateCurrentPage();
     });
   }
 
-  function zoomBy(delta) {
+  function stageWidth() {
+    /* 1px of slack stops a rounding error from producing a horizontal
+       scrollbar at exactly fit width. */
+    var pad = parseFloat(getComputedStyle(el.stage).paddingLeft) || 0;
+    return Math.max(el.stage.clientWidth - pad * 2 - 1, 200);
+  }
+
+  function fitScale(pdfWidth) {
+    return stageWidth() / pdfWidth;
+  }
+
+  /* Sets the CSS size of every page shell from fit x zoom. Canvases are
+     re-rendered separately; this is the cheap part that must feel instant. */
+  function applyZoom() {
+    var w = stageWidth() * viewer.zoom;
+    viewer.pages.forEach(function (p) { p.shell.style.width = w + "px"; });
+    el.stage.classList.toggle("is-zoomed", viewer.zoom > 1.02);
+    if (el.zoomLevel) el.zoomLevel.textContent = Math.round(viewer.zoom * 100) + "%";
+  }
+
+  function observePages() {
+    if (viewer.io) viewer.io.disconnect();
+    /* A generous margin means a page is already rendering by the time it
+       scrolls into view, so fast scrolling does not show blank sheets. */
+    viewer.io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var idx = Number(e.target.getAttribute("data-page")) - 1;
+        if (e.isIntersecting) renderPageAt(idx);
+      });
+    }, { root: el.stage, rootMargin: "150% 0px" });
+
+    viewer.pages.forEach(function (p) { viewer.io.observe(p.shell); });
+  }
+
+  function renderPageAt(idx) {
+    var p = viewer.pages[idx];
+    if (!p || p.rendered || p.task || !viewer.doc) return;
+
+    var token = viewer.token;
+    var wanted = viewer.zoom;
+
+    p.task = viewer.doc.getPage(idx + 1).then(function (page) {
+      if (token !== viewer.token) return;
+
+      /* Cap the backing store on very high-DPR phones: a 3x canvas of an A4
+         page at 4x zoom is 40 megapixels and will be dropped by the browser. */
+      var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      var css = p.shell.clientWidth;
+      var base = page.getViewport({ scale: 1 });
+      var scale = (css / base.width) * dpr;
+      var vp = page.getViewport({ scale: scale });
+
+      var canvas = p.canvas;
+      canvas.width = Math.round(vp.width);
+      canvas.height = Math.round(vp.height);
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
+
+      var task = page.render({ canvasContext: canvas.getContext("2d"), viewport: vp });
+      p.renderTask = task;
+      return task.promise.then(function () {
+        if (token !== viewer.token) return;
+        p.rendered = true;
+        p.zoomAt = wanted;
+        p.shell.classList.add("is-ready");
+      });
+    }).catch(function () {
+      /* A single failed page should not take the whole document down. */
+    }).then(function () {
+      p.task = null;
+      p.renderTask = null;
+    });
+  }
+
+  /* Drop canvases well outside the viewport so long documents stay light. */
+  function pruneFarPages() {
+    var cur = viewer.current - 1;
+    viewer.pages.forEach(function (p, i) {
+      if (Math.abs(i - cur) <= KEEP || !p.rendered) return;
+      p.canvas.width = 0;
+      p.canvas.height = 0;
+      p.rendered = false;
+      p.shell.classList.remove("is-ready");
+    });
+  }
+
+  /* ---- zoom ----------------------------------------------------------- */
+
+  function setZoom(next, focusX, focusY) {
     if (!viewer.doc) return;
-    viewer.fitWidth = false;
-    viewer.zoom = Math.min(Math.max(viewer.zoom + delta, 0.4), 3);
-    renderPage(viewer.page);
+    next = Math.min(Math.max(next, MIN_ZOOM), MAX_ZOOM);
+    if (Math.abs(next - viewer.zoom) < 0.005) return;
+
+    /* Keep whatever the reader was looking at under their finger. */
+    var stage = el.stage;
+    var cx = focusX === undefined ? stage.clientWidth / 2 : focusX;
+    var cy = focusY === undefined ? stage.clientHeight / 2 : focusY;
+    var ratio = next / viewer.zoom;
+    var sx = (stage.scrollLeft + cx) * ratio - cx;
+    var sy = (stage.scrollTop + cy) * ratio - cy;
+
+    viewer.zoom = next;
+    applyZoom();
+    stage.scrollLeft = sx;
+    stage.scrollTop = sy;
+
+    /* Re-render what is on screen at the new resolution. */
+    viewer.pages.forEach(function (p) {
+      if (p.rendered && Math.abs((p.zoomAt || 1) - next) > 0.01) {
+        p.rendered = false;
+        p.shell.classList.remove("is-ready");
+      }
+    });
+    renderAround();
+  }
+
+  function renderAround() {
+    var cur = viewer.current - 1;
+    for (var i = Math.max(0, cur - 1); i <= Math.min(viewer.pages.length - 1, cur + 1); i++) {
+      renderPageAt(i);
+    }
+  }
+
+  function zoomBy(step) {
+    setZoom(viewer.zoom + step);
+  }
+
+  /* ---- navigation ----------------------------------------------------- */
+
+  function gotoPage(n) {
+    if (!viewer.doc) return;
+    n = Math.min(Math.max(1, n | 0), viewer.pages.length);
+    var p = viewer.pages[n - 1];
+    if (!p) return;
+    el.stage.scrollTop = p.shell.offsetTop - 12;
+    viewer.current = n;
+    syncPager();
+  }
+
+  function updateCurrentPage() {
+    var mid = el.stage.scrollTop + el.stage.clientHeight * 0.35;
+    var found = 1;
+    for (var i = 0; i < viewer.pages.length; i++) {
+      if (viewer.pages[i].shell.offsetTop <= mid) found = i + 1; else break;
+    }
+    if (found !== viewer.current) {
+      viewer.current = found;
+      syncPager();
+      pruneFarPages();
+    }
+  }
+
+  function syncPager() {
+    var input = $(".tkpub-pager input", el.modal);
+    if (input && document.activeElement !== input) input.value = String(viewer.current);
+    var prev = $("[data-prev]", el.modal), next = $("[data-next]", el.modal);
+    if (prev) prev.disabled = viewer.current <= 1;
+    if (next) next.disabled = viewer.current >= viewer.pages.length;
+  }
+
+  /* ---- touch: pinch to zoom, double tap ------------------------------- */
+
+  function bindStageGestures() {
+    if (el.stage.__tkbound) return;
+    el.stage.__tkbound = true;
+
+    el.stage.addEventListener("scroll", function () {
+      if (viewer.scrollRaf) return;
+      viewer.scrollRaf = requestAnimationFrame(function () {
+        viewer.scrollRaf = 0;
+        updateCurrentPage();
+      });
+    }, { passive: true });
+
+    var pinch = null;
+
+    function dist(t) {
+      var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    el.stage.addEventListener("touchstart", function (ev) {
+      if (ev.touches.length !== 2 || !viewer.doc) return;
+      var r = el.stage.getBoundingClientRect();
+      pinch = {
+        d: dist(ev.touches),
+        zoom: viewer.zoom,
+        x: (ev.touches[0].clientX + ev.touches[1].clientX) / 2 - r.left,
+        y: (ev.touches[0].clientY + ev.touches[1].clientY) / 2 - r.top
+      };
+    }, { passive: true });
+
+    el.stage.addEventListener("touchmove", function (ev) {
+      if (!pinch || ev.touches.length !== 2) return;
+      ev.preventDefault();   // stop the browser zooming the whole page instead
+      var k = dist(ev.touches) / pinch.d;
+      setZoom(pinch.zoom * k, pinch.x, pinch.y);
+    }, { passive: false });
+
+    el.stage.addEventListener("touchend", function (ev) {
+      if (pinch && ev.touches.length < 2) pinch = null;
+    }, { passive: true });
+
+    /* Double tap toggles between fitting the width and a comfortable
+       reading zoom \u2014 the gesture people already use on photos and maps. */
+    var lastTap = 0;
+    el.stage.addEventListener("touchend", function (ev) {
+      if (ev.touches.length || !viewer.doc) return;
+      var now = Date.now();
+      if (now - lastTap < 300) {
+        var r = el.stage.getBoundingClientRect();
+        var t = ev.changedTouches[0];
+        setZoom(viewer.zoom > 1.2 ? 1 : 2, t.clientX - r.left, t.clientY - r.top);
+        lastTap = 0;
+      } else {
+        lastTap = now;
+      }
+    }, { passive: true });
+
+    /* Ctrl/\u2318 + wheel is the desktop equivalent. */
+    el.stage.addEventListener("wheel", function (ev) {
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      ev.preventDefault();
+      var r = el.stage.getBoundingClientRect();
+      setZoom(viewer.zoom * (ev.deltaY < 0 ? 1.1 : 0.9), ev.clientX - r.left, ev.clientY - r.top);
+    }, { passive: false });
   }
 
   /* ------------------------------------------------------------------ */
@@ -2176,8 +2604,8 @@ body.tkpub-locked { overflow: hidden; }
       var t = ev.target.closest("button, a");
       if (!t) return;
       if (t.hasAttribute("data-close")) closeViewer();
-      else if (t.hasAttribute("data-prev")) renderPage(viewer.page - 1);
-      else if (t.hasAttribute("data-next")) renderPage(viewer.page + 1);
+      else if (t.hasAttribute("data-prev")) gotoPage(viewer.current - 1);
+      else if (t.hasAttribute("data-next")) gotoPage(viewer.current + 1);
       else if (t.hasAttribute("data-zoomin")) zoomBy(0.25);
       else if (t.hasAttribute("data-zoomout")) zoomBy(-0.25);
       else if (t.hasAttribute("data-dl")) countDownload(Number(t.getAttribute("data-download")));
@@ -2194,15 +2622,15 @@ body.tkpub-locked { overflow: hidden; }
     });
 
     $(".tkpub-pager input", el.modal).addEventListener("change", function () {
-      renderPage(parseInt(this.value, 10) || 1);
+      gotoPage(parseInt(this.value, 10) || 1);
     });
 
     document.addEventListener("keydown", function (ev) {
       if (!el.modal.classList.contains("is-open")) return;
       if (ev.key === "Escape") return closeViewer();
       if (ev.target.tagName === "INPUT") return;
-      if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); renderPage(viewer.page + 1); }
-      if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); renderPage(viewer.page - 1); }
+      if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); gotoPage(viewer.current + 1); }
+      if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); gotoPage(viewer.current - 1); }
       if (ev.key === "+" || ev.key === "=") zoomBy(0.25);
       if (ev.key === "-") zoomBy(-0.25);
       if (ev.key === "Tab") trapFocus(ev);
@@ -2210,7 +2638,13 @@ body.tkpub-locked { overflow: hidden; }
 
     /* Re-fit the page when the window changes size. */
     window.addEventListener("resize", debounce(function () {
-      if (viewer.doc && viewer.fitWidth) renderPage(viewer.page);
+      if (!viewer.doc) return;
+      /* Re-fit to the new width, keeping the reader on the same page. */
+      var was = viewer.current;
+      applyZoom();
+      viewer.pages.forEach(function (p) { p.rendered = false; p.shell.classList.remove("is-ready"); });
+      gotoPage(was);
+      renderAround();
     }, 220));
 
     /* Back button closes the viewer instead of leaving the page. */
@@ -2276,7 +2710,6 @@ body.tkpub-locked { overflow: hidden; }
     el.live = $("#tkpub-live");
     el.modal = $("#tkpub-modal");
     el.stage = $("#tkpub-stage");
-    el.modalFoot = $("#tkpub-modal-foot-meta");
     el.zoomLevel = $(".tkpub-zoomlevel", el.modal);
 
     try {
@@ -2732,9 +3165,13 @@ body.tkpub-locked { overflow: hidden; }
         '<div class="tkpub-hint" id="tkpub-upload-label">Preparing\u2026</div>' +
       "</div>" +
 
+      /* The guidance sits above the buttons rather than beside them: on a
+         phone the button row is a sticky bar, and a sticky bar is no place
+         for a sentence people actually need to read. */
+      '<p class="tkpub-hint tkpub-form-note">Save as a draft first and check how it looks on ' +
+        "the page before you publish. Drafts are only visible to signed-in staff.</p>" +
+
       '<div class="tkpub-form-foot">' +
-        '<span class="tkpub-hint">Save as a draft first and check how it looks on the page ' +
-          "before you publish. Drafts are only visible to signed-in staff.</span>" +
         '<button type="button" class="tkpub-btn tkpub-btn-ghost" data-save="draft">Save draft</button>' +
         '<button type="submit" class="tkpub-btn tkpub-btn-primary" data-save="publish">' +
           ICON.check + "Publish</button>" +

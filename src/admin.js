@@ -384,9 +384,13 @@
         '<div class="tkpub-hint" id="tkpub-upload-label">Preparing…</div>' +
       "</div>" +
 
+      /* The guidance sits above the buttons rather than beside them: on a
+         phone the button row is a sticky bar, and a sticky bar is no place
+         for a sentence people actually need to read. */
+      '<p class="tkpub-hint tkpub-form-note">Save as a draft first and check how it looks on ' +
+        "the page before you publish. Drafts are only visible to signed-in staff.</p>" +
+
       '<div class="tkpub-form-foot">' +
-        '<span class="tkpub-hint">Save as a draft first and check how it looks on the page ' +
-          "before you publish. Drafts are only visible to signed-in staff.</span>" +
         '<button type="button" class="tkpub-btn tkpub-btn-ghost" data-save="draft">Save draft</button>' +
         '<button type="submit" class="tkpub-btn tkpub-btn-primary" data-save="publish">' +
           ICON.check + "Publish</button>" +

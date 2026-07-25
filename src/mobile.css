@@ -665,3 +665,18 @@
   .tkpub-chip:active { transform: none; }
   .tkpub-toast { animation: none; }
 }
+
+/* ==========================================================================
+   Late additions from the viewer rewrite
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* The form's guidance moved out of the sticky button bar (admin.js), so it
+     needs spacing of its own now that it is a standalone paragraph. */
+  .tkpub-form-note {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--tk-line-soft);
+    line-height: 1.55;
+  }
+}

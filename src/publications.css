@@ -1003,22 +1003,35 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
 
   .tkpub-modal-foot { padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
 
-  /* Download already sits in the title bar, and the address bar already
-     holds the shareable link, so the bottom bar keeps only what the hands
-     need while reading. */
+  /* Download already sits in the title bar, so the labelled button here is
+     redundant. Full screen stays: opening the PDF in the phone's own viewer
+     is the escape hatch when rendering fails or someone wants to print, and
+     it is the one control that cannot be replaced by something else. */
   .tkpub-modal-actions .is-wide,
-  .tkpub-modal-actions [data-tab],
   .tkpub-zoomlevel { display: none; }
   .tkpub-modal-actions .tkpub-icbtn > span { display: none; }
 
-  .tkpub-icbtn { min-width: 44px; height: 44px; padding: 0 6px; }
-  .tkpub-pager input { width: 34px; }
-  .tkpub-pager .tkpub-pagecount { padding-right: 6px; font-size: 12.5px; }
+  /* 44px is the floor for a touch target, so nothing here goes below it —
+     the pager gives up width instead. */
+  .tkpub-icbtn { min-width: 44px; height: 44px; padding: 0 5px; }
+  .tkpub-pager input {
+    min-width: 44px; min-height: 44px; width: 44px; padding: 0;
+    font-size: 16px;   /* below 16 and iOS zooms the page on focus */
+  }
+  .tkpub-pager .tkpub-pagecount { padding-right: 5px; font-size: 12.5px; }
+  .tkpub-modal-foot { gap: 8px; }
 }
 
 @media (max-width: 380px) {
-  .tkpub-icbtn { min-width: 42px; height: 42px; }
   .tkpub-modal-titles p { display: none; }   /* title alone; every mm counts */
+  /* Last two to go, in this order. The link is already in the address bar and
+     reachable through the phone's share sheet; the page total is already in
+     the title bar meta line. Both are duplicates — the touch targets are not,
+     so they keep their full size. */
+  .tkpub-modal-actions [data-copy],
+  .tkpub-pager .tkpub-pagecount { display: none; }
+  .tkpub-icbtn { padding: 0 2px; }
+  .tkpub-modal-foot { gap: 6px; }
 }
 
 /* A phone held sideways has almost no height to spare — give the document

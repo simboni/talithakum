@@ -156,7 +156,7 @@ function injectHelpers() {
       let s = el.tagName.toLowerCase();
       if (el.id) s += "#" + el.id;
       if (el.classList && el.classList.length) {
-        s += "." + Array.prototype.slice.call(el.classList, 0, 3).join(".");
+        s += "." + Array.from(el.classList).slice(0, 3).join(".");
       }
       for (const a of ["data-open", "data-close", "data-save", "data-view", "data-tab", "data-dl"]) {
         if (el.hasAttribute && el.hasAttribute(a)) s += "[" + a + "]";
@@ -187,7 +187,7 @@ function injectHelpers() {
       return false;
     },
     roots() {
-      return Array.prototype.slice.call(document.querySelectorAll(".tkpub"));
+      return Array.from(document.querySelectorAll(".tkpub"));
     },
     /* Every match for `sel` inside any .tkpub root, roots included. */
     all(sel) {
@@ -196,7 +196,7 @@ function injectHelpers() {
         if (r.matches(sel)) out.add(r);
         r.querySelectorAll(sel).forEach((e) => out.add(e));
       });
-      return Array.prototype.slice.call(out);
+      return Array.from(out);
     },
     rect(el) {
       const r = el.getBoundingClientRect();
@@ -215,12 +215,35 @@ const docOverflow = (page) => page.evaluate(() => ({
   over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
 }));
 
+/* What is actually making the document wider than the screen. Unlike the
+   check below this does NOT skip visually hidden elements — an opacity:0 or
+   visibility:hidden box is still laid out and still widens the document. */
+const widestOffenders = (page) => page.evaluate((slop) => {
+  const vw = document.documentElement.clientWidth;
+  const out = [];
+  window.__mt.all("*").forEach((el) => {
+    if (getComputedStyle(el).display === "none") return;
+    const r = el.getBoundingClientRect();
+    if (r.right <= vw + slop) return;
+    if (window.__mt.clippedX(el)) return;
+    out.push({ sel: window.__mt.describe(el), right: Math.round(r.right), width: Math.round(r.width) });
+  });
+  out.sort((a, b) => b.right - a.right);
+  return out.slice(0, 5);
+}, EDGE_SLOP);
+
 async function checkNoDocOverflow(page, where) {
   const o = await docOverflow(page);
+  const ok = o.over <= EDGE_SLOP;
+  let blame = "";
+  if (!ok) {
+    const bad = await widestOffenders(page);
+    blame = bad.length ? "; widest: " + bad.map((b) => `${b.sel} right=${b.right}`).join(" | ") : "";
+  }
   check(
     `no horizontal page overflow — ${where}`,
-    o.over <= EDGE_SLOP,
-    `scrollWidth ${o.scrollWidth} vs clientWidth ${o.clientWidth} (+${o.over}px, expected <= +${EDGE_SLOP})`
+    ok,
+    `scrollWidth ${o.scrollWidth} vs clientWidth ${o.clientWidth} (+${o.over}px, expected <= +${EDGE_SLOP})${blame}`
   );
 }
 
@@ -252,11 +275,22 @@ async function checkNoElementOverflow(page, where) {
 const measureAll = (page, selector, scope) => page.evaluate(({ selector, scope }) => {
   const root = scope ? document.querySelector(scope) : document;
   if (!root) return null;
-  return Array.prototype.slice.call(root.querySelectorAll(selector))
+  /* A control sitting in a rail the user can swipe sideways is reachable even
+     though it is off-screen — that is the chip-rail pattern, not a bug. A
+     control inside an overflow:hidden box, by contrast, really is unreachable. */
+  const swipeable = (el) => {
+    for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX;
+      if ((ox === "auto" || ox === "scroll") && p.scrollWidth > p.clientWidth + 1) return true;
+    }
+    return false;
+  };
+  return Array.from(root.querySelectorAll(selector))
     .filter((el) => window.__mt.visible(el))
     .map((el) => ({
       sel: window.__mt.describe(el),
       ...window.__mt.rect(el),
+      swipeable: swipeable(el),
       vw: document.documentElement.clientWidth,
       vh: document.documentElement.clientHeight,
     }));
@@ -268,18 +302,21 @@ async function checkWithinViewport(page, name, selector, { scope = null, vertica
     check(name, false, `expected at least ${expectAtLeast} visible element(s) matching ${selector}${scope ? " inside " + scope : ""}, found ${found ? found.length : 0}`);
     return;
   }
-  const bad = found.filter((r) =>
+  const railed = found.filter((r) => r.swipeable).length;
+  const bad = found.filter((r) => !r.swipeable && (
     r.left < -EDGE_SLOP || r.right > r.vw + EDGE_SLOP ||
     (vertical && (r.top < -EDGE_SLOP || r.bottom > r.vh + EDGE_SLOP))
-  );
+  ));
   check(
     name,
     bad.length === 0,
-    bad.map((b) =>
-      `${b.sel} at left=${Math.round(b.left)} right=${Math.round(b.right)}` +
-      (vertical ? ` top=${Math.round(b.top)} bottom=${Math.round(b.bottom)}` : "") +
-      ` but the viewport is ${b.vw}x${b.vh}`
-    ).join(" | ")
+    bad.length
+      ? bad.map((b) =>
+          `${b.sel} at left=${Math.round(b.left)} right=${Math.round(b.right)}` +
+          (vertical ? ` top=${Math.round(b.top)} bottom=${Math.round(b.bottom)}` : "") +
+          ` but the viewport is ${b.vw}x${b.vh}`
+        ).join(" | ")
+      : `${found.length} checked` + (railed ? `, ${railed} reachable by swiping a horizontal rail` : "")
   );
 }
 
@@ -427,18 +464,38 @@ async function runDevice(browser, device) {
 
   /* ---- 6..12  the document reader ------------------------------------ */
 
-  /* Park the page part-way down so a scroll leak behind the reader shows up. */
+  /* Park the page part-way down so a scroll leak behind the reader shows up.
+     Read the offset AFTER scrolling the trigger into view: Playwright scrolls
+     an element into view before clicking it, so a reading taken earlier is not
+     where the page actually was when the reader opened. */
   await page.evaluate(() => window.scrollTo(0, 320));
+  await wait(page, 150);
+  const trigger = page.locator("#tkpub-grid .tkpub-card [data-open]").first();
+  await trigger.scrollIntoViewIfNeeded();
   await wait(page, 150);
   const scrollYBefore = await page.evaluate(() => window.scrollY);
 
-  await page.locator("#tkpub-grid .tkpub-card [data-open]").first().click();
+  await trigger.click();
   const opened = await page.waitForSelector("#tkpub-modal.is-open", { timeout: 10000 })
     .then(() => true).catch(() => false);
   check("tapping Read opens the reader", opened);
 
   if (opened) {
     await wait(page, 400);
+
+    /* While the reader is open the page is pinned with position:fixed, so
+       window.scrollY reads 0 by design — the offset lives in body.style.top.
+       What actually matters to a reader is where the list is when they come
+       back out, so assert that instead. It is checked again after close. */
+    const pinned = await page.evaluate(() => ({
+      y: window.scrollY,
+      top: document.body.style.top,
+      fixed: getComputedStyle(document.body).position === "fixed",
+    }));
+    check("the page behind the reader is pinned, not scrolled",
+      pinned.fixed && pinned.top === `-${Math.round(scrollYBefore)}px`,
+      `body position=${pinned.fixed ? "fixed" : "not fixed"} top=${pinned.top || "unset"}, ` +
+      `expected top=-${Math.round(scrollYBefore)}px (scrollY reads ${Math.round(pinned.y)} while pinned)`);
 
     /* 6 — the reader owns the whole screen on a phone. */
     const panel = await page.evaluate(() => {
@@ -489,8 +546,9 @@ async function runDevice(browser, device) {
            : "no reader header found");
     check("the document title truncates to one line",
       !!head && head.titleScrollHeight <= head.lineHeight * 1.5 + 2,
-      head ? `title scrollHeight ${head.titleScrollHeight}px vs one line ${Math.round(head.lineHeight)}px ` +
-             `(white-space: ${head.whiteSpace}, text-overflow: ${head.textOverflow}) — it is wrapping`
+      head ? `title scrollHeight ${head.titleScrollHeight}px, one line is ${Math.round(head.lineHeight)}px, ` +
+             `allowed <= ${Math.round(head.lineHeight * 1.5 + 2)}px ` +
+             `(white-space: ${head.whiteSpace}, text-overflow: ${head.textOverflow})`
            : "no reader title found");
 
     /* 8 — a real page renders. */
@@ -545,9 +603,48 @@ async function runDevice(browser, device) {
       "[data-prev], [data-next], [data-zoomin], [data-zoomout], [data-close], #tkpub-page-input",
       { scope: "#tkpub-modal", vertical: true, expectAtLeast: 3 });
 
-    /* 11 — download and full screen. */
-    await checkWithinViewport(page, "download and full-screen controls are present and within the viewport",
-      "[data-dl], [data-tab]", { scope: "#tkpub-modal", vertical: true, expectAtLeast: 2 });
+    /* 11 — download and full screen, reported separately so the lead can see
+       which one is missing rather than a bare count. */
+    for (const [label, sel] of [["download", "[data-dl]"], ["full-screen", "[data-tab]"]]) {
+      const state = await page.evaluate((sel) => {
+        const els = Array.from(document.querySelectorAll("#tkpub-modal " + sel));
+        if (!els.length) return { inDom: 0 };
+        const shown = els.filter((e) => window.__mt.visible(e));
+        const hiddenBy = els.map((e) => {
+          const cs = getComputedStyle(e);
+          return `display:${cs.display} visibility:${cs.visibility} opacity:${cs.opacity}`;
+        });
+        const vw = document.documentElement.clientWidth;
+        const vh = document.documentElement.clientHeight;
+        return {
+          inDom: els.length,
+          shown: shown.length,
+          hiddenBy,
+          boxes: shown.map((e) => ({ sel: window.__mt.describe(e), ...window.__mt.rect(e) })),
+          vw, vh,
+        };
+      }, sel);
+
+      if (!state.inDom) {
+        check(`the ${label} control is present and within the viewport`, false,
+          `no ${sel} exists inside the reader at all`);
+        continue;
+      }
+      if (!state.shown) {
+        check(`the ${label} control is present and within the viewport`, false,
+          `${state.inDom} ${sel} in the DOM but none rendered (${state.hiddenBy.join(" ; ")}) — ` +
+          `it is hidden on this viewport, so the reader offers no ${label} control`);
+        continue;
+      }
+      const off = state.boxes.filter((b) =>
+        b.left < -EDGE_SLOP || b.right > state.vw + EDGE_SLOP ||
+        b.top < -EDGE_SLOP || b.bottom > state.vh + EDGE_SLOP);
+      check(`the ${label} control is present and within the viewport`, off.length === 0,
+        off.length
+          ? off.map((b) => `${b.sel} at left=${Math.round(b.left)} right=${Math.round(b.right)} ` +
+              `top=${Math.round(b.top)} bottom=${Math.round(b.bottom)} but the viewport is ${state.vw}x${state.vh}`).join(" | ")
+          : `${state.shown} visible`);
+    }
 
     if (device.phone) await checkTouchTargets(page, "reader open");
 
@@ -577,10 +674,21 @@ async function runDevice(browser, device) {
       await page.mouse.wheel(0, 900);
       await wait(page, 400);
     }
-    const scrollYDuring = await page.evaluate(() => window.scrollY);
+    const after = await page.evaluate(() => {
+      const s = document.querySelector("#tkpub-modal .tkpub-modal-stage, #tkpub-stage");
+      return {
+        scrollY: window.scrollY,
+        stageScrollTop: s ? s.scrollTop : -1,
+        stageScrollable: s ? s.scrollHeight > s.clientHeight : false,
+      };
+    });
+    /* The page is pinned while the reader is open, so window.scrollY is 0
+       throughout; what matters is that scrolling the stage does not move it. */
     check("scrolling inside the reader does not scroll the page behind it",
-      Math.abs(scrollYDuring - scrollYBefore) <= 1,
-      `window.scrollY moved from ${Math.round(scrollYBefore)} to ${Math.round(scrollYDuring)} while the reader was open`);
+      Math.abs(after.scrollY - pinned.y) <= 1,
+      `window.scrollY ${Math.round(pinned.y)} -> ${Math.round(after.scrollY)} (expected unchanged); ` +
+      `the stage itself moved to scrollTop ${Math.round(after.stageScrollTop)} ` +
+      `(scrollable: ${after.stageScrollable ? "yes" : "no"})`);
 
     /* 10 — close control, then Escape. */
     let clickErr = "";
@@ -611,26 +719,39 @@ async function runDevice(browser, device) {
       await wait(page, 350);
       check("Escape closes the reader",
         (await page.locator("#tkpub-modal.is-open").count()) === 0);
-      const unlocked = await page.evaluate(() => {
-        const cs = getComputedStyle(document.body);
-        return !/lock|noscroll|no-scroll|modal-open/i.test(document.body.className) &&
-               !/hidden|clip/.test(cs.overflow);
-      });
+      const unlock = await page.evaluate(() => ({
+        bodyClass: document.body.className,
+        overflow: getComputedStyle(document.body).overflow,
+      }));
+      const unlocked = !/lock|noscroll|no-scroll|modal-open/i.test(unlock.bodyClass) &&
+                       !/hidden|clip/.test(unlock.overflow);
       check("the scroll lock is released when the reader closes", unlocked,
-        "the page is still locked after the reader closed");
+        `after closing, body class is "${unlock.bodyClass}" and body overflow is ${unlock.overflow}`);
+
+      /* The one that readers actually feel: come back out of a document and
+         the list is where you left it, not at the top. */
+      const restored = await page.evaluate(() => window.scrollY);
+      check("the reading position is restored when the reader closes",
+        Math.abs(restored - scrollYBefore) <= 2,
+        `window.scrollY was ${Math.round(scrollYBefore)} when the reader opened and ` +
+        `${Math.round(restored)} after closing`);
     } else {
       check("Escape closes the reader", false, "the reader would not reopen");
     }
   } else {
     for (const skipped of [
+      "the page behind the reader is pinned, not scrolled",
+      "the reading position is restored when the reader closes",
       "the reader fills the phone screen",
       "the reader header stays a slim bar",
       "the document title truncates to one line",
       "a PDF page renders to a canvas within 15s",
       "the rendered page fills the reader at the default zoom",
       "reader controls are fully within the viewport",
-      "download and full-screen controls are present and within the viewport",
+      "the download control is present and within the viewport",
+      "the full-screen control is present and within the viewport",
       "the page behind the reader is scroll-locked",
+      "scrolling inside the reader does not scroll the page behind it",
       "the close control is reachable and closes the reader",
       "Escape closes the reader",
     ]) check(skipped, false, "the reader never opened — see the check above");
@@ -661,9 +782,15 @@ async function runDevice(browser, device) {
       if (device.phone) await checkInputFonts(page, "publishing form");
 
       /* The buttons live at the bottom of a long form, so scroll to them the
-         way a user would before asking whether they are reachable. */
-      await page.locator('#tkpub-form [data-save="publish"]').first().scrollIntoViewIfNeeded();
-      await wait(page, 250);
+         way a user would before asking whether they are reachable — through
+         every scrolling ancestor, not just the page. */
+      await page.evaluate(() => {
+        const b = document.querySelector('#tkpub-form [data-save="publish"]');
+        if (b) b.scrollIntoView({ block: "center", inline: "nearest" });
+      });
+      await wait(page, 300);
+      await page.locator('#tkpub-form [data-save="publish"]').first().scrollIntoViewIfNeeded().catch(() => {});
+      await wait(page, 300);
       await checkWithinViewport(page, "Save draft and Publish are reachable within the viewport",
         '[data-save="draft"], [data-save="publish"]',
         { scope: "#tkpub-form", vertical: true, expectAtLeast: 2 });

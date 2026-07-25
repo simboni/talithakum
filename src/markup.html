@@ -42,11 +42,13 @@
       <select id="tkpub-lang" class="tkpub-select" hidden><option value="">All languages</option></select>
 
       <label class="tkpub-sr" for="tkpub-sort">Sort</label>
+      <!-- Deliberately terse: at 320px "Newest first" truncates to
+           "Newest firs…", which reads as broken rather than abbreviated. -->
       <select id="tkpub-sort" class="tkpub-select">
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
-        <option value="az">Title A&ndash;Z</option>
-        <option value="za">Title Z&ndash;A</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="az">A&ndash;Z</option>
+        <option value="za">Z&ndash;A</option>
       </select>
 
       <div class="tkpub-views" role="group" aria-label="Change the layout">

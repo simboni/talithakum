@@ -374,10 +374,25 @@ body {
   font-size: .76em; color: #a9a29b; letter-spacing: .04em;
 }
 
+/* On a phone the framing is not the point — the page is. Everything above
+   the browser frame is compressed so the real thing is reachable in one
+   short scroll, which is also how the audience will meet it. */
 @media (max-width: 640px) {
-  .pv-wrap { padding: 26px 12px 48px; }
-  .pv-screen { padding: 20px 14px 30px; }
-  .pv-frame { border-radius: 12px; }
+  .pv-wrap { padding: 20px 10px 40px; }
+  .pv-intro { margin-bottom: 18px; }
+  .pv-intro h1 { font-size: 27px; line-height: 1.16; margin-bottom: 8px; }
+  .pv-intro p { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .pv-eyebrow { margin-bottom: 10px; font-size: 11px; }
+  .pv-try { gap: 6px; margin-top: 14px; }
+  .pv-try li { font-size: 12px; padding: 6px 11px; }
+  .pv-screen { padding: 14px 10px 24px; }
+  .pv-frame { border-radius: 10px; }
+  .pv-bar { padding: 9px 11px; gap: 10px; }
+  .pv-url { font-size: 11.5px; padding: 5px 11px; }
+  .pv-dots { display: none; }          /* pure decoration, and it costs width */
+  .pv-foot { margin-top: 20px; gap: 12px; }
+  .pv-card { padding: 14px 16px; }
+  .pv-card p { font-size: 13.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
@@ -415,16 +430,14 @@ ${css.trim()}
     <span class="pv-eyebrow">Design preview</span>
     <h1>A publications library for Talitha Kum Kenya</h1>
     <p>
-      This is the working page, not a picture of one. Search, filters, the layout
-      switch and the document reader are all live &#8212; try them. It is styled from
-      the site's own BigHearts settings, so the colours, the Quicksand headings
-      and the Nunito Sans body text are the ones already in use on
-      talithakumraht.org.
+      This is the working page, not a picture of one &#8212; search, filters and the
+      document reader are all live. Best viewed on a phone, which is where
+      almost all of its readers will be.
     </p>
     <p>
-      The twelve documents below are <b>sample content</b> written to show the
-      layout. The reader draws a representative page rather than a real PDF,
-      because this preview runs with no network access.
+      The twelve documents are <b>sample content</b>, and the reader draws a
+      representative page rather than a real PDF because this preview runs with
+      no network access.
     </p>
     <ul class="pv-try">
       <li><b>Search</b> for "migration"</li>

@@ -1021,22 +1021,35 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
 
   .tkpub-modal-foot { padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
 
-  /* Download already sits in the title bar, and the address bar already
-     holds the shareable link, so the bottom bar keeps only what the hands
-     need while reading. */
+  /* Download already sits in the title bar, so the labelled button here is
+     redundant. Full screen stays: opening the PDF in the phone's own viewer
+     is the escape hatch when rendering fails or someone wants to print, and
+     it is the one control that cannot be replaced by something else. */
   .tkpub-modal-actions .is-wide,
-  .tkpub-modal-actions [data-tab],
   .tkpub-zoomlevel { display: none; }
   .tkpub-modal-actions .tkpub-icbtn > span { display: none; }
 
-  .tkpub-icbtn { min-width: 44px; height: 44px; padding: 0 6px; }
-  .tkpub-pager input { width: 34px; }
-  .tkpub-pager .tkpub-pagecount { padding-right: 6px; font-size: 12.5px; }
+  /* 44px is the floor for a touch target, so nothing here goes below it —
+     the pager gives up width instead. */
+  .tkpub-icbtn { min-width: 44px; height: 44px; padding: 0 5px; }
+  .tkpub-pager input {
+    min-width: 44px; min-height: 44px; width: 44px; padding: 0;
+    font-size: 16px;   /* below 16 and iOS zooms the page on focus */
+  }
+  .tkpub-pager .tkpub-pagecount { padding-right: 5px; font-size: 12.5px; }
+  .tkpub-modal-foot { gap: 8px; }
 }
 
 @media (max-width: 380px) {
-  .tkpub-icbtn { min-width: 42px; height: 42px; }
   .tkpub-modal-titles p { display: none; }   /* title alone; every mm counts */
+  /* Last two to go, in this order. The link is already in the address bar and
+     reachable through the phone's share sheet; the page total is already in
+     the title bar meta line. Both are duplicates — the touch targets are not,
+     so they keep their full size. */
+  .tkpub-modal-actions [data-copy],
+  .tkpub-pager .tkpub-pagecount { display: none; }
+  .tkpub-icbtn { padding: 0 2px; }
+  .tkpub-modal-foot { gap: 6px; }
 }
 
 /* A phone held sideways has almost no height to spare — give the document
@@ -1053,7 +1066,688 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
   .tkpub-toolbar, .tkpub-admin, .tkpub-actions, .tkpub-modal, .tkpub-toasts { display: none !important; }
 }
 
+/* ==========================================================================
+   Talitha Kum RAHT Kenya — Publications repository
+   MOBILE REFINEMENTS
 
+   This file is appended AFTER publications.css by the build, so on equal
+   specificity these rules win. It is a refinement layer, not a rewrite:
+   publications.css still owns the design system, the custom properties and
+   every desktop decision. Nothing here re-declares a colour — if a brand
+   value needs changing, change it once in publications.css.
+
+   Why this file exists at all: roughly 95% of the people who read these
+   documents arrive on a phone, usually on a slow connection, usually
+   one-handed. The desktop layout is not wrong, it is simply built for a
+   different set of constraints — wide viewports, a mouse, and a scrollbar
+   that costs nothing. Below 640px the trade-offs invert: vertical space is
+   the scarcest resource, every target has to survive a thumb, and any input
+   under 16px makes iOS Safari zoom the whole page on focus.
+
+   DELIBERATELY NOT HERE: the document reader. Everything inside
+   .tkpub-modal — the pager, zoom controls, stage, spinner, viewer messages
+   and .tkpub-icbtn itself — is owned by the viewer work and is tuned
+   against real PDF rendering, which this file cannot see. The one exception
+   is .tkpub-icbtn where it is *reused* in the admin panel; those rules are
+   scoped to an admin ancestor (.tkpub-row-tools, .tkpub-file) and never
+   touch the bare class.
+
+   Note on stickiness: publications.css already drops the toolbar out of
+   sticky positioning below 860px, and --tk-sticky-offset exists on .tkpub
+   for themes with a fixed header. BigHearts has one. We do not fight it —
+   see the toolbar section for why static is the right answer on a phone.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   PHONES — the main breakpoint
+   ========================================================================== */
+
+@media (max-width: 640px) {
+
+  /* ------------------------------------------------------------------------
+     Overflow safety.
+     A single long title, a pasted URL in a summary or an unbroken Kiswahili
+     compound is enough to push the whole page sideways at 320px, and a
+     horizontally scrolling page is very hard to recover from on a phone.
+     We opt individual text holders into breaking rather than setting it on
+     .tkpub wholesale, because `anywhere` also changes min-content sizing and
+     would quietly affect how the grid and flex containers measure themselves.
+     --------------------------------------------------------------------- */
+  .tkpub-title,
+  .tkpub-lede,
+  .tkpub-card h3,
+  .tkpub-summary,
+  .tkpub-featured h3,
+  .tkpub-featured p,
+  .tkpub-state h3,
+  .tkpub-state p,
+  .tkpub-toast,
+  .tkpub-callout,
+  .tkpub-hint,
+  .tkpub-err,
+  .tkpub-cover-fallback .tkpub-cf-title,
+  .tkpub-file-body b,
+  .tkpub-row-body b { overflow-wrap: anywhere; }
+
+  /* The grid's minmax(288px, 1fr) track is wider than a 320px viewport once
+     padding is counted, which is a classic source of sideways scroll. */
+  .tkpub-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+
+  /* ------------------------------------------------------------------------
+     iOS zoom-on-focus.
+     Mobile Safari zooms the viewport whenever a focused form control is
+     under 16px, and it does not zoom back out. It is the single most common
+     mobile bug in pages like this. 16px everywhere, no exceptions.
+     The :not(.tkpub-modal) guard matters: the reader's root element carries
+     both .tkpub and .tkpub-modal, and its controls belong to the viewer.
+     --------------------------------------------------------------------- */
+  .tkpub:not(.tkpub-modal) input,
+  .tkpub:not(.tkpub-modal) select,
+  .tkpub:not(.tkpub-modal) textarea { font-size: 16px; }
+
+  /* ------------------------------------------------------------------------
+     Header and lede.
+     clamp() already shrinks the title, but the block as a whole is pure
+     preamble: on a phone it sits between the reader and the thing they came
+     for. Tighten the rhythm and let the lede run to the full column — the
+     62ch cap is a line-length rule for wide screens and does nothing here.
+     --------------------------------------------------------------------- */
+  .tkpub-head { margin-bottom: 18px; }
+  .tkpub-eyebrow { font-size: 11px; padding: 5px 11px; margin-bottom: 10px; }
+  .tkpub-title { font-size: 27px; line-height: 1.18; }
+  .tkpub-lede { font-size: 15.5px; line-height: 1.6; max-width: none; margin-top: 8px; }
+
+  /* ------------------------------------------------------------------------
+     Toolbar.
+     Two changes. First, it stays static (publications.css already does this
+     below 860px and we keep it): a sticky filter bar plus the theme's own
+     fixed header would eat a third of a small viewport permanently, and
+     filters are a thing you touch once and then scroll past.
+     Second, the row becomes an explicit two-up grid instead of a wrapping
+     flex row. Wrapping produced ragged half-empty rows whose height changed
+     depending on whether the language select was present; a grid gives the
+     same height every time. The screen-reader labels are position:absolute
+     so they take no grid slot, and the language select is [hidden] on
+     single-language libraries so it is skipped by auto-placement.
+     --------------------------------------------------------------------- */
+  .tkpub-toolbar { padding: 12px; margin-bottom: 16px; }
+
+  .tkpub-toolbar-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  /* Search is the primary action on a phone — full width, always first. */
+  .tkpub-search { grid-column: 1 / -1; }
+  .tkpub-search input {
+    min-height: 48px;
+    padding: 12px 48px 12px 42px;
+    border-radius: var(--tk-radius-sm);
+  }
+  /* 26px was a mouse target. A thumb needs the full 44, and the input's
+     right padding above is set to clear it. */
+  .tkpub-search-clear {
+    width: 44px; height: 44px;
+    right: 2px;
+    border-radius: 50%;
+  }
+  .tkpub-search-clear svg { width: 18px; height: 18px; }
+
+  .tkpub-select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 34px 12px 12px;
+  }
+  /* Never let a layout rule resurrect a select the JS deliberately hid. */
+  .tkpub-select[hidden] { display: none; }
+
+  /* The view switch gets its own full-width row as a segmented control.
+     It reads as one control, and each half comfortably clears 44px instead
+     of the 34x32 icon buttons that work fine under a cursor. */
+  .tkpub-views {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    padding: 4px;
+  }
+  .tkpub-views button {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 44px;
+    height: 44px;
+  }
+  .tkpub-views button svg { width: 19px; height: 19px; }
+
+  /* ------------------------------------------------------------------------
+     Facet chips.
+     Two wrapping rows of chips can be 200px tall on a 360px screen — more
+     than the first card. Each facet row becomes a single-line strip that
+     scrolls sideways, which is a gesture phone users already have.
+
+     Details that make it not feel broken:
+       - the scrollbar is hidden (it would be a permanent grey line here);
+       - momentum scrolling is kept on iOS;
+       - proximity snapping tidies up the resting position without fighting
+         a deliberate flick;
+       - a right-edge fade signals there is more, and the trailing padding
+         means that fade lands on empty space once you reach the end rather
+         than permanently dimming the last chip;
+       - the facet label pins to the left so you never lose track of which
+         axis you are filtering on;
+       - vertical padding leaves room for the focus ring, which an
+         overflow-x container would otherwise clip.
+     --------------------------------------------------------------------- */
+  .tkpub-facets {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    /* Keeps a snapped or keyboard-focused chip clear of the pinned label. */
+    scroll-padding-inline: 62px 12px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 8px 30px 4px 0;
+    /* Fade the right edge so it is obvious the strip continues. */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+  .tkpub-facets::-webkit-scrollbar { display: none; }
+
+  .tkpub-facet-label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    flex: 0 0 auto;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    background: var(--tk-surface);
+    padding-right: 8px;
+  }
+
+  .tkpub-chip {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    min-height: 44px;
+    padding: 0 15px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .tkpub-chip-count { font-size: 12px; }
+
+  /* The reset is the escape hatch from a bad filter combination, so it must
+     not be the one thing hiding off the right edge. It pins to the trailing
+     edge instead, and the row that contains it drops the fade so the button
+     is never rendered half-transparent. Visual order still matches DOM
+     order — it is the last item either way. */
+  .tkpub-facets:has(.tkpub-reset) {
+    padding-right: 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .tkpub-facets .tkpub-reset {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 2px 0 18px;
+    background: linear-gradient(to right, transparent, var(--tk-surface) 16px);
+  }
+
+  .tkpub-resultbar { margin-bottom: 12px; font-size: 13.5px; }
+
+  /* ------------------------------------------------------------------------
+     Cards.
+     A full-width 4:5 cover on a 360px screen is around 430px tall, so a
+     single card fills the viewport and the library stops looking like a
+     library. The grid card adopts the same shape the list view already
+     uses: a small cover on the left, text on the right, actions across the
+     bottom. You can see three or four publications at once, which is what
+     makes browsing possible.
+
+     3:4 rather than the default 4:5 because at 96px wide the cover is now a
+     thumbnail, and the taller ratio reads more like a document spine.
+     --------------------------------------------------------------------- */
+  .tkpub-grid:not(.is-list) .tkpub-card {
+    --tk-cover-ratio: 3 / 4;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-areas:
+      "cover body"
+      "actions actions";
+    align-items: start;
+    gap: 4px 14px;
+    padding: 14px;
+  }
+  .tkpub-grid:not(.is-list) .tkpub-card > .tkpub-cover {
+    grid-area: cover;
+    margin-bottom: 0;
+  }
+  .tkpub-grid:not(.is-list) .tkpub-card-body { grid-area: body; min-width: 0; }
+  .tkpub-grid:not(.is-list) .tkpub-actions { grid-area: actions; }
+
+  .tkpub-card h3 { font-size: 16px; margin: 5px 0 6px; }
+  .tkpub-summary { font-size: 13.5px; -webkit-line-clamp: 3; line-clamp: 3; }
+  .tkpub-meta { margin-top: 9px; gap: 4px 12px; font-size: 12px; }
+
+  /* The generated cover is typeset for a 288px card. At thumbnail size the
+     org mark is unreadable and just adds noise, so only the type label and
+     a short title survive. */
+  .tkpub-cover-fallback { padding: 9px; }
+  .tkpub-cover-fallback .tkpub-cf-title {
+    font-size: 12px;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .tkpub-cover-fallback .tkpub-cf-mark { display: none; }
+  /* The page-count badge and the type label both live in the top corners of
+     the cover. At 84-96px wide there are no longer two corners and they
+     print on top of each other. The count is already in the meta row as
+     "24 pages", so the badge is the one to lose — same call the list view
+     makes for the same reason. */
+  .tkpub-cover-badge { display: none; }
+
+  /* Theme tags double as filters, so they are real targets, not decoration.
+     min-height rather than padding alone keeps the pill's own text centred.
+     Full-size pills wrap to two or three rows inside a 214px text column,
+     which put about 50px of chrome on every card, so the row scrolls
+     sideways like the facet strips rather than growing downwards. */
+  .tkpub-tags {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    gap: 6px;
+    margin-top: 6px;
+    /* Room for the focus ring, which an overflow container would clip. */
+    padding: 4px 0;
+  }
+  .tkpub-tags::-webkit-scrollbar { display: none; }
+  .tkpub-tag {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 13px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  /* Two actions, side by side, equal width, never wrapping into a stub.
+     Equal widths also mean the primary action lands under the thumb in the
+     same place on every card. */
+  .tkpub-actions {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding-top: 12px;
+  }
+  .tkpub-actions .tkpub-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 46px;
+    padding-inline: 12px;
+  }
+  /* The uppercase button label is what overflows first at 320px; letting it
+     shrink is better than letting the row break. */
+  .tkpub-btn { font-size: 13px; }
+  .tkpub-btn-sm { font-size: 12.5px; min-height: 44px; }
+
+  /* List view already has the right shape — it only needs the touch sizes,
+     which the .tkpub-actions rules above supply. Cover ratio matched to the
+     grid card so switching views does not jump the layout. */
+  .tkpub-grid.is-list .tkpub-card { --tk-cover-ratio: 3 / 4; }
+
+  /* ------------------------------------------------------------------------
+     Featured block.
+     publications.css stacks it below 620px, which makes the tallest, most
+     colourful thing on the page even taller. Same horizontal treatment as
+     the cards instead — it stays visually distinct through the gradient and
+     the flag, not through sheer size.
+     --------------------------------------------------------------------- */
+  .tkpub-featured {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+  .tkpub-featured .tkpub-cover { max-width: none; width: 100%; --tk-cover-ratio: 3 / 4; }
+  .tkpub-featured h3 { font-size: 19px; margin: 8px 0 6px; }
+  .tkpub-featured p {
+    font-size: 14px;
+    max-width: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    line-clamp: 4;
+    overflow: hidden;
+  }
+  .tkpub-flag { font-size: 10.5px; padding: 5px 10px; }
+  /* The body is a flex column with align-items:flex-start, so the action row
+     has to be told to fill the column before its buttons can share it. */
+  .tkpub-featured .tkpub-actions {
+    align-self: stretch;
+    width: 100%;
+    padding-top: 14px;
+  }
+
+  /* ------------------------------------------------------------------------
+     Empty, error and load-more.
+     56px of vertical padding around an empty state is generous framing on a
+     desktop and wasted scrolling on a phone. The load-more button goes full
+     width: it is the only control in its region, it is at the end of a long
+     scroll, and a centred pill is a small target to hit one-handed.
+     --------------------------------------------------------------------- */
+  .tkpub-state { padding: 32px 18px; }
+  .tkpub-state svg { width: 34px; height: 34px; margin-bottom: 10px; }
+  .tkpub-state h3 { font-size: 16.5px; }
+  .tkpub-state p { font-size: 14px; max-width: none; }
+
+  .tkpub-more { margin-top: 22px; }
+  .tkpub-more .tkpub-btn { width: 100%; min-height: 50px; }
+
+  /* ------------------------------------------------------------------------
+     Toasts.
+     Full-bleed at the bottom (publications.css does this at 620px) sits
+     right where the home indicator and browser chrome are, so respect the
+     safe area. When the publishing form's sticky footer is on screen the
+     toast is lifted above it — a confirmation that covers the Publish
+     button is worse than no confirmation.
+     --------------------------------------------------------------------- */
+  .tkpub-toasts {
+    left: 12px; right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .tkpub-toast { font-size: 14.5px; padding: 13px 15px; }
+  body:has(.tkpub-admin.is-open) .tkpub-toasts {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ======================================================================
+     Admin panel
+     Staff publish from their phones — often standing in front of the person
+     whose report they are uploading — so this is not a desktop-only screen.
+     ====================================================================== */
+
+  .tkpub-admin { margin-bottom: 18px; }
+
+  /* The bar's icon, heading and actions cannot share one line at 360px
+     without the buttons becoming unusable, so the actions take their own
+     full-width row and split it. */
+  .tkpub-admin-bar { padding: 12px 14px; gap: 10px; }
+  .tkpub-admin-bar h2 { font-size: 14.5px; }
+  .tkpub-admin-bar p { font-size: 12px; }
+  .tkpub-admin-bar .tkpub-admin-actions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tkpub-admin-bar .tkpub-btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .tkpub-who { min-height: 34px; }
+
+  .tkpub-admin-body { padding: 20px 14px 18px; }
+
+  /* Two tabs, so let them split the width — a full-width target each rather
+     than two small text links in the corner. Kept scrollable in case a third
+     tab is ever added. */
+  .tkpub-tabs {
+    margin-bottom: 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tkpub-tabs::-webkit-scrollbar { display: none; }
+  .tkpub-tabs button {
+    flex: 1 1 auto;
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: 14.5px;
+    white-space: nowrap;
+  }
+
+  .tkpub-form-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .tkpub-field textarea { min-height: 110px; }
+
+  /* Theme selection is a set of tappable pills, and a mis-tap here silently
+     mis-files a publication. Full 44px height, and enough horizontal padding
+     that adjacent pills are not neighbours by a hair. */
+  .tkpub-checks { gap: 8px; }
+  .tkpub-check span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  /* The switch label becomes the target, not just the 42x24 track. The track
+     itself is scaled up in step (knob and travel included) because a 24px
+     control is hard to read at arm's length. */
+  .tkpub-switch { min-height: 44px; gap: 12px; }
+  .tkpub-switch .tkpub-track { width: 50px; height: 30px; }
+  .tkpub-switch .tkpub-track::after { width: 24px; height: 24px; top: 3px; left: 3px; }
+  .tkpub-switch input:checked + .tkpub-track::after { transform: translateX(20px); }
+
+  /* Drop zones cannot be dropped onto from a phone — they are buttons that
+     open the file picker. Sized accordingly, and the dashed edge is kept
+     because it still reads as "put something here". */
+  .tkpub-drop {
+    min-height: 108px;
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .tkpub-drop svg { width: 24px; height: 24px; margin-bottom: 6px; }
+  .tkpub-drop p { font-size: 14px; }
+  .tkpub-drop small { font-size: 12px; }
+
+  /* Chosen-file row: the remove control is a real target. Scoped to .tkpub-file
+     so it never reaches the reader's own icon buttons. */
+  .tkpub-file { min-height: 58px; gap: 10px; padding: 9px 8px 9px 12px; }
+  .tkpub-file .tkpub-icbtn { width: 44px; height: 44px; flex-shrink: 0; }
+
+  /* The publishing form is long — a dozen fields, two uploads. On a phone
+     the Save and Publish buttons end up several screens below the field you
+     are working in, so people abandon halfway or scroll blindly to the
+     bottom to check the form is still there. Pinning the footer keeps the
+     commit action permanently in reach and doubles as a reminder that
+     nothing has been saved yet. The negative margins let it span the full
+     panel width so it reads as a bar rather than a floating row.
+     The guidance hint is dropped here: it is a paragraph of advice, and a
+     sticky bar has room for actions only. See the report — it wants to move
+     above the footer in the markup. */
+  .tkpub-form-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 20px -14px 0;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--tk-surface);
+    border-top: 1px solid var(--tk-line);
+    box-shadow: 0 -8px 18px -12px rgba(0, 0, 0, .45);
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+  .tkpub-form-foot .tkpub-hint { display: none; }
+  .tkpub-form-foot .tkpub-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    padding-inline: 12px;
+  }
+
+  /* Manage list: four columns will not fit, so status and tools drop to a
+     second line while the icon keeps its own full-height column. The edit
+     and trash buttons are 44px because trash is destructive and a near-miss
+     is expensive. */
+  .tkpub-row {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "ico body tools"
+      "ico status tools";
+    gap: 4px 10px;
+    padding: 10px 8px 10px 12px;
+  }
+  .tkpub-row > .tkpub-file-ico { grid-area: ico; align-self: start; width: 34px; height: 34px; }
+  .tkpub-row-body { grid-area: body; }
+  .tkpub-row .tkpub-status { grid-area: status; justify-self: start; }
+  .tkpub-row-tools { grid-area: tools; align-self: center; gap: 2px; }
+  .tkpub-row-tools .tkpub-icbtn { width: 44px; height: 44px; }
+
+  /* Login: the card cap is a desktop reading-width rule. The callout is the
+     only place anyone learns what an Application Password is, so it stays,
+     but at a size that does not dominate the form it explains. */
+  .tkpub-login { max-width: none; }
+  .tkpub-callout { padding: 12px 13px; font-size: 13px; }
+  .tkpub-callout ol { padding-left: 20px; }
+  #tkpub-login-form > .tkpub-btn { width: 100%; min-height: 48px; }
+}
+
+
+/* ==========================================================================
+   SMALL PHONES
+   360px is the common floor, but a 320px iPhone SE still turns up in the
+   analytics and it is exactly the width where a two-up grid starts
+   truncating select labels and buttons lose their icons.
+   ========================================================================== */
+
+@media (max-width: 380px) {
+
+  .tkpub-toolbar { padding: 10px; }
+  .tkpub-toolbar-row { gap: 8px; }
+  /* The two-up grid is kept even here — a stacked row per select would add
+     about 60px to a toolbar the reader has to scroll past every time. What
+     gives instead is the select's own padding, which buys back roughly a
+     character and a half of visible label at 16px. */
+  .tkpub-select { padding-left: 10px; padding-right: 28px; background-position: right 8px center; }
+
+  .tkpub-title { font-size: 24px; }
+  .tkpub-lede { font-size: 15px; }
+
+  /* Cover shrinks before the text column does — the title and summary are
+     what people actually scan. */
+  .tkpub-grid:not(.is-list) .tkpub-card { grid-template-columns: 84px minmax(0, 1fr); gap: 4px 12px; padding: 12px; }
+  .tkpub-featured { grid-template-columns: 88px minmax(0, 1fr); gap: 14px; padding: 14px; }
+
+  /* Below this width the two action buttons cannot hold icon plus label
+     side by side. The labels carry the meaning, so the icons go. */
+  .tkpub-actions .tkpub-btn svg { display: none; }
+  .tkpub-actions .tkpub-btn { font-size: 12.5px; padding-inline: 8px; }
+
+  .tkpub-form-foot .tkpub-btn { font-size: 12.5px; }
+}
+
+
+/* ==========================================================================
+   TOUCH DEVICES
+   Width is a proxy for touch, and a poor one — an iPad in landscape is
+   1024px wide and still has no cursor. These rules key off the input device
+   itself, which is the honest condition for anything about fingers.
+   ========================================================================== */
+
+@media (hover: none) and (pointer: coarse) {
+
+  /* Repeated from the phone block on purpose: tablets zoom on sub-16px
+     inputs exactly like phones do, and they never match max-width 640. */
+  .tkpub:not(.tkpub-modal) input,
+  .tkpub:not(.tkpub-modal) select,
+  .tkpub:not(.tkpub-modal) textarea { font-size: 16px; }
+
+  /* :hover on a touch device is applied on tap and then sticks until you
+     tap elsewhere, so hover states read as broken selection states. Cards
+     lose the lift, and interactive elements get a pressed state instead —
+     feedback at the moment of the tap, which is when it is useful. */
+  .tkpub-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--tk-line);
+  }
+  .tkpub-chip:hover { border-color: var(--tk-line); color: var(--tk-body); }
+  .tkpub-chip[aria-pressed="true"]:hover { border-color: var(--tk-accent); color: #fff; }
+  .tkpub-tag:hover { background: var(--tk-accent-soft); color: var(--tk-accent-dark); }
+  .tkpub-drop:hover { border-color: var(--tk-line); background: var(--tk-canvas); }
+  .tkpub-search-clear:hover { background: none; color: var(--tk-muted); }
+
+  .tkpub-chip:active { transform: scale(.97); }
+  .tkpub-tag:active { background: var(--tk-accent); color: #fff; }
+  .tkpub-drop:active { border-color: var(--tk-accent); background: var(--tk-accent-soft); }
+  .tkpub-card .tkpub-btn:active { opacity: .85; }
+
+  /* Kills the 300ms click delay and the grey flash Android draws over any
+     tapped control — both make an otherwise fast page feel unresponsive. */
+  .tkpub:not(.tkpub-modal) button,
+  .tkpub:not(.tkpub-modal) a,
+  .tkpub:not(.tkpub-modal) label,
+  .tkpub:not(.tkpub-modal) select { touch-action: manipulation; }
+  .tkpub:not(.tkpub-modal) { -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+
+  /* The zone is a file-picker button here, not a drop target — nothing can
+     be dragged onto it. The size constraint from the phone block still
+     applies to a tablet, which otherwise inherits the desktop padding. */
+  .tkpub-drop { min-height: 104px; }
+}
+
+
+/* ==========================================================================
+   REDUCED MOTION
+   publications.css already quiets the skeleton shimmer and the card
+   transition. These are the animations this file introduces or relies on:
+   the sideways facet strips, tap feedback and the toast entrance. Vestibular
+   triggers are worse on a handheld screen held close to the face.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  /* Snapping is a motion effect of its own — a flick that keeps travelling
+     and then slides back is exactly the kind of movement being opted out of. */
+  .tkpub-facets {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+  }
+
+  .tkpub-chip,
+  .tkpub-tag,
+  .tkpub-btn,
+  .tkpub-check span,
+  .tkpub-drop,
+  .tkpub-views button,
+  .tkpub-switch .tkpub-track,
+  .tkpub-switch .tkpub-track::after { transition: none; }
+
+  .tkpub-chip:active { transform: none; }
+  .tkpub-toast { animation: none; }
+}
+
+/* ==========================================================================
+   Late additions from the viewer rewrite
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* The form's guidance moved out of the sticky button bar (admin.js), so it
+     needs spacing of its own now that it is a standalone paragraph. */
+  .tkpub-form-note {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--tk-line-soft);
+    line-height: 1.55;
+  }
+}
 </style>
 
 <!-- =========================================================================
@@ -1100,11 +1794,13 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
       <select id="tkpub-lang" class="tkpub-select" hidden><option value="">All languages</option></select>
 
       <label class="tkpub-sr" for="tkpub-sort">Sort</label>
+      <!-- Deliberately terse: at 320px "Newest first" truncates to
+           "Newest firs…", which reads as broken rather than abbreviated. -->
       <select id="tkpub-sort" class="tkpub-select">
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
-        <option value="az">Title A&ndash;Z</option>
-        <option value="za">Title Z&ndash;A</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="az">A&ndash;Z</option>
+        <option value="za">Z&ndash;A</option>
       </select>
 
       <div class="tkpub-views" role="group" aria-label="Change the layout">
@@ -2896,9 +3592,13 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
         '<div class="tkpub-hint" id="tkpub-upload-label">Preparing…</div>' +
       "</div>" +
 
+      /* The guidance sits above the buttons rather than beside them: on a
+         phone the button row is a sticky bar, and a sticky bar is no place
+         for a sentence people actually need to read. */
+      '<p class="tkpub-hint tkpub-form-note">Save as a draft first and check how it looks on ' +
+        "the page before you publish. Drafts are only visible to signed-in staff.</p>" +
+
       '<div class="tkpub-form-foot">' +
-        '<span class="tkpub-hint">Save as a draft first and check how it looks on the page ' +
-          "before you publish. Drafts are only visible to signed-in staff.</span>" +
         '<button type="button" class="tkpub-btn tkpub-btn-ghost" data-save="draft">Save draft</button>' +
         '<button type="submit" class="tkpub-btn tkpub-btn-primary" data-save="publish">' +
           ICON.check + "Publish</button>" +
