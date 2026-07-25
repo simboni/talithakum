@@ -13,3 +13,9 @@ node_modules/
 # Plugin zip is a build output — rebuild with: node build-plugin-zip.mjs
 # (kept in the repo so it can be downloaded without Node installed)
 dist/_staging/
+
+# Dev-only render checks
+dist/publications/shots/
+
+# Symlink to test/node_modules so build-docs.mjs can find playwright
+/node_modules
