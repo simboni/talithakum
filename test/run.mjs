@@ -119,15 +119,25 @@ await page.click('[data-view="grid"]');
 
 await page.locator("#tkpub-grid .tkpub-card [data-open]").first().click();
 await page.waitForSelector("#tkpub-modal.is-open");
-await page.waitForSelector("#tkpub-stage canvas", { timeout: 15000 });
-await page.waitForTimeout(900);
+await page.waitForSelector("#tkpub-stage .tkpub-pg.is-ready", { timeout: 15000 });
+await page.waitForTimeout(600);
 
-const canvasBox = await page.locator("#tkpub-stage canvas").boundingBox();
+const canvasBox = await page.locator("#tkpub-stage canvas").first().boundingBox();
 check("pdf.js renders a page to canvas", canvasBox && canvasBox.height > 200,
   canvasBox ? `${Math.round(canvasBox.width)}x${Math.round(canvasBox.height)}` : "no canvas");
 
+/* One shell per page of the document, built up front so the scrollbar is
+   honest before anything has rendered. */
+const shells = await page.locator("#tkpub-stage .tkpub-pg").count();
+check("a shell exists for every page", shells === 5, `${shells} shells`);
+
+/* `is-ready` is the honest signal — an untouched <canvas> still reports the
+   HTML default of 300x150, so measuring canvas.width counts blank pages. */
+const painted = await page.locator("#tkpub-stage .tkpub-pg.is-ready").count();
+check("pages near the viewport are painted", painted > 0, `${painted} of ${shells}`);
+
 const pageCountLabel = await page.locator(".tkpub-pagecount").innerText();
-check("page count read from the PDF", /\/\s*\d+/.test(pageCountLabel), pageCountLabel);
+check("page count read from the PDF", /\/\s*5/.test(pageCountLabel), pageCountLabel);
 
 check("deep link written to the URL", page.url().includes("publication="), page.url());
 
@@ -135,17 +145,66 @@ await page.screenshot({ path: join(here, "shots", "04-reader.png") });
 
 await page.click("[data-next]");
 await page.waitForTimeout(700);
-check("next page advances", (await page.inputValue("#tkpub-page-input")) === "2",
+check("next scrolls to the following page", (await page.inputValue("#tkpub-page-input")) === "2",
   await page.inputValue("#tkpub-page-input"));
 
+/* Scrolling the stage, rather than the pager, is the primary gesture. */
+await page.evaluate(() => {
+  const s = document.querySelector("#tkpub-stage");
+  s.scrollTop = s.scrollHeight;
+});
+await page.waitForTimeout(700);
+check("scrolling to the end lands on the last page",
+  (await page.inputValue("#tkpub-page-input")) === "5",
+  await page.inputValue("#tkpub-page-input"));
+
+await page.evaluate(() => { document.querySelector("#tkpub-stage").scrollTop = 0; });
+await page.waitForTimeout(400);
+
+const zoomBefore = await page.locator(".tkpub-zoomlevel").innerText();
 await page.click("[data-zoomin]");
-await page.waitForTimeout(600);
-const zoom = await page.locator(".tkpub-zoomlevel").innerText();
-check("zoom control works", parseInt(zoom, 10) > 0, zoom);
+await page.waitForTimeout(700);
+const zoomAfter = await page.locator(".tkpub-zoomlevel").innerText();
+check("zoom control changes the zoom", parseInt(zoomAfter, 10) > parseInt(zoomBefore, 10),
+  `${zoomBefore} -> ${zoomAfter}`);
+const zoomedWidth = await page.locator("#tkpub-stage .tkpub-pg").first().boundingBox();
+check("zooming actually widens the page", zoomedWidth.width > canvasBox.width,
+  `${Math.round(canvasBox.width)} -> ${Math.round(zoomedWidth.width)}`);
 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(250);
 check("escape closes the reader", await page.locator("#tkpub-modal.is-open").count() === 0);
+
+/* A long document must not hold every page in memory at once — this is the
+   48-page annual report case on a mid-range phone. */
+await page.fill("#tkpub-search", "Community Facilitator");
+await page.waitForTimeout(400);
+await page.locator("#tkpub-grid .tkpub-card [data-open]").first().click();
+await page.waitForSelector("#tkpub-stage .tkpub-pg.is-ready", { timeout: 15000 });
+await page.waitForTimeout(800);
+const longShells = await page.locator("#tkpub-stage .tkpub-pg").count();
+const longPainted = await page.locator("#tkpub-stage .tkpub-pg.is-ready").count();
+check("a 30-page document renders lazily", longShells === 30 && longPainted < longShells,
+  `${longPainted} of ${longShells} painted`);
+
+/* And unrenders again once pages are far behind. */
+await page.evaluate(() => {
+  const s = document.querySelector("#tkpub-stage");
+  s.scrollTop = s.scrollHeight;
+});
+await page.waitForTimeout(1200);
+const afterScroll = await page.locator("#tkpub-stage .tkpub-pg.is-ready").count();
+const liveCanvases = await page.evaluate(() =>
+  Array.from(document.querySelectorAll("#tkpub-stage canvas")).filter((c) => c.width > 400).length);
+check("far pages are dropped as you scroll on", afterScroll < longShells,
+  `${afterScroll} of ${longShells} still marked ready`);
+check("dropped pages release their canvas memory", liveCanvases <= 8,
+  `${liveCanvases} full-size canvases retained`);
+
+await page.keyboard.press("Escape");
+await page.waitForTimeout(200);
+await page.fill("#tkpub-search", "");
+await page.waitForTimeout(400);
 check("deep link removed on close", !page.url().includes("publication="));
 
 /* deep link on load */

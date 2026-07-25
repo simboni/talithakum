@@ -107,7 +107,7 @@ const SAMPLES = [
     s: "A short brief for parish teams supporting people preparing to travel for work abroad. Explains contract red flags, the documents a genuine agency must provide, and where to verify a recruitment licence." },
   { t: "Bakhita Day Prayer and Reflection Guide", ty: "Prayer & Reflection", th: ["Prayer", "Faith Formation"], p: 3,
     s: "A guide for parishes and communities marking the International Day of Prayer and Awareness against Human Trafficking on 8 February, with readings, intercessions and reflection questions for small groups." },
-  { t: "Community Facilitator Training Manual", ty: "Training Manual", th: ["Prevention", "Youth & Schools"], p: 8,
+  { t: "Community Facilitator Training Manual", ty: "Training Manual", th: ["Prevention", "Youth & Schools"], p: 30,
     s: "The full curriculum used to prepare community facilitators to run awareness sessions, covering session plans, discussion prompts, safeguarding rules and how to respond when a participant discloses an experience." },
   { t: "Network Newsletter: July 2026", ty: "Newsletter", th: ["Partnership"], p: 4,
     s: "News from across the network this month, including new member congregations, a summary of the county-level advocacy meetings, and dates for upcoming training in the coast and western regions." },

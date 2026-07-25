@@ -23,6 +23,10 @@ const [markup, css, publicJs, adminJs] = await Promise.all([
   src("admin.js"),
 ]);
 
+/* Mobile refinements are a separate file so they can be reasoned about on
+   their own; they are appended last so they win on equal specificity. */
+const mobileCss = await src("mobile.css").catch(() => "");
+
 /* A </script> sequence anywhere inside the JS would close the tag early. */
 const safe = (js) => js.replace(/<\/script>/gi, "<\\/script>");
 
@@ -47,6 +51,8 @@ const out = `${banner}
 
 <style>
 ${css.trim()}
+
+${mobileCss.trim()}
 </style>
 
 ${markup.trim()}

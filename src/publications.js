@@ -548,10 +548,31 @@
   /* PDF viewer                                                          */
   /* ------------------------------------------------------------------ */
 
+  /* The reader is a continuous vertical scroll of rendered pages, not a
+     one-page-at-a-time flipbook. On a phone — which is where nearly all of
+     these documents are read — scrolling is the gesture people already have,
+     and it removes the need to hit a small "next" target between every page.
+
+     Pages are rendered lazily and unrendered again once they are well out of
+     view, so a 48-page annual report does not hold 48 canvases in memory on a
+     mid-range Android. */
   var viewer = {
-    pub: null, doc: null, page: 1, zoom: 1, fitWidth: true,
-    lastFocus: null, rendering: false, pending: null, token: 0
+    pub: null,
+    doc: null,
+    pages: [],        // { shell, canvas, w, h, rendered, task }
+    current: 1,
+    fit: 1,           // scale at which a page fills the stage width
+    zoom: 1,          // user multiplier on top of fit
+    lastFocus: null,
+    token: 0,
+    io: null,
+    scrollRaf: 0
   };
+
+  var MAX_ZOOM = 4;
+  var MIN_ZOOM = 0.5;
+  /* How many pages either side of the viewport stay rendered. */
+  var KEEP = 2;
 
   var pdfjsPromise = null;
 
@@ -578,23 +599,34 @@
     if (!pub || !pub.pdf) return;
 
     viewer.pub = pub;
-    viewer.page = 1;
+    viewer.current = 1;
     viewer.zoom = 1;
-    viewer.fitWidth = true;
     viewer.doc = null;
+    viewer.pages = [];
     viewer.token++;
     viewer.lastFocus = document.activeElement;
 
     $(".tkpub-modal-titles h2", el.modal).textContent = pub.title;
+    /* Kept to one short line: on a phone this sits under a truncated title
+       and anything longer pushes the reading area down the screen. */
     $(".tkpub-modal-titles p", el.modal).textContent =
-      [pub.type, prettyDate(pub.date), pub.issuer].filter(Boolean).join("  ·  ");
-    $("[data-dl]", el.modal).href = pub.pdf;
-    $("[data-dl]", el.modal).setAttribute("data-download", pub.id);
+      [pub.type, pub.pages ? pub.pages + " pages" : "", bytes(pub.size)]
+        .filter(Boolean).join("  ·  ");
+
+    $$("[data-dl]", el.modal).forEach(function (a) {
+      a.href = pub.pdf;
+      a.setAttribute("data-download", pub.id);
+    });
     $("[data-tab]", el.modal).href = pub.pdf;
-    el.modalFoot.innerHTML = metaMarkup(pub);
+
+    /* Remember where the page was, so closing the reader puts the reader
+       back exactly where they were in the list. iOS in particular will
+       otherwise jump to the top when the body is unlocked. */
+    viewer.pageScroll = window.pageYOffset || document.documentElement.scrollTop || 0;
 
     el.modal.classList.add("is-open");
     document.body.classList.add("tkpub-locked");
+    document.body.style.top = "-" + viewer.pageScroll + "px";
     $(".tkpub-icbtn.is-close", el.modal).focus();
 
     if (pushUrl !== false) {
@@ -612,7 +644,11 @@
     if (!el.modal.classList.contains("is-open")) return;
     el.modal.classList.remove("is-open");
     document.body.classList.remove("tkpub-locked");
+    document.body.style.top = "";
+    window.scrollTo(0, viewer.pageScroll || 0);
+
     viewer.token++;
+    teardownPages();
     viewer.doc = null;
     el.stage.innerHTML = "";
     if (viewer.lastFocus && viewer.lastFocus.focus) viewer.lastFocus.focus();
@@ -638,7 +674,7 @@
   function fallbackFrame(reason) {
     var pub = viewer.pub;
     var mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    setPagerEnabled(false);
+    setControls(false);
 
     if (mobile) {
       stageMessage(
@@ -655,12 +691,25 @@
       esc(pub.title) + '" loading="lazy"></iframe>';
   }
 
-  function setPagerEnabled(on, total) {
-    var pager = $(".tkpub-pager", el.modal);
-    pager.style.display = on ? "" : "none";
-    $$(".tkpub-zoom", el.modal).forEach(function (b) { b.style.display = on ? "" : "none"; });
-    el.zoomLevel.style.display = on ? "" : "none";
-    if (on && total) $(".tkpub-pagecount", el.modal).textContent = "/ " + total;
+  function setControls(on, total) {
+    el.modal.classList.toggle("has-controls", !!on);
+    if (on && total) {
+      $(".tkpub-pagecount", el.modal).textContent = "/ " + total;
+      $(".tkpub-pager input", el.modal).max = String(total);
+    }
+  }
+
+  /* Cancel in-flight renders and drop canvases. Called on close and on
+     reopen; without it a fast close/open leaves orphaned render tasks
+     writing into detached canvases. */
+  function teardownPages() {
+    if (viewer.io) { viewer.io.disconnect(); viewer.io = null; }
+    viewer.pages.forEach(function (p) {
+      if (p.task && p.task.cancel) { try { p.task.cancel(); } catch (e) { /* already done */ } }
+      p.task = null;
+      p.rendered = false;
+    });
+    viewer.pages = [];
   }
 
   function renderStage() {
@@ -668,13 +717,13 @@
     var token = viewer.token;
 
     stageMessage('<div class="tkpub-spinner"></div><p>Loading document…</p>');
-    setPagerEnabled(false);
+    setControls(false);
 
     /* Optional escape hatch: set CONFIG.renderer to a function and it takes
        over the viewer body completely. Used by the offline design preview,
        and there if you ever want to self-host a different PDF engine. */
     if (typeof CONFIG.renderer === "function") {
-      CONFIG.renderer({ stage: el.stage, modal: el.modal, pub: pub, setPager: setPagerEnabled });
+      CONFIG.renderer({ stage: el.stage, modal: el.modal, pub: pub, setPager: setControls });
       return;
     }
 
@@ -686,11 +735,7 @@
       .then(function (doc) {
         if (!doc || token !== viewer.token) return;
         viewer.doc = doc;
-        el.stage.className = "tkpub-modal-stage";
-        el.stage.innerHTML = "<canvas></canvas>";
-        setPagerEnabled(true, doc.numPages);
-        $(".tkpub-pager input", el.modal).value = "1";
-        renderPage(1);
+        return buildPages(doc);
       })
       .catch(function (err) {
         if (token !== viewer.token) return;
@@ -700,59 +745,274 @@
       });
   }
 
-  function renderPage(n) {
-    if (!viewer.doc) return;
-    var total = viewer.doc.numPages;
-    n = Math.min(Math.max(1, n | 0), total);
-    viewer.page = n;
+  /* ---- building the scroll ------------------------------------------- */
 
-    if (viewer.rendering) { viewer.pending = n; return; }
-    viewer.rendering = true;
-
+  /* Every page gets a correctly-proportioned placeholder up front, so the
+     scrollbar is honest from the first frame and the document does not jump
+     around as pages finish rendering. */
+  function buildPages(doc) {
     var token = viewer.token;
-    viewer.doc.getPage(n).then(function (page) {
-      if (token !== viewer.token) { viewer.rendering = false; return; }
 
-      var canvas = $("canvas", el.stage);
-      if (!canvas) { viewer.rendering = false; return; }
+    return doc.getPage(1).then(function (first) {
+      if (token !== viewer.token) return;
 
-      var base = page.getViewport({ scale: 1 });
-      var avail = el.stage.clientWidth - 40;
-      var scale = viewer.fitWidth ? Math.min(avail / base.width, 2) : viewer.zoom;
-      /* Render at device resolution so text is crisp on retina screens. */
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      var vp = page.getViewport({ scale: scale * dpr });
+      var base = first.getViewport({ scale: 1 });
+      viewer.fit = fitScale(base.width);
 
-      canvas.width = vp.width;
-      canvas.height = vp.height;
-      canvas.style.width = (vp.width / dpr) + "px";
-      canvas.style.height = (vp.height / dpr) + "px";
+      el.stage.className = "tkpub-modal-stage is-doc";
+      el.stage.innerHTML = '<div class="tkpub-pages"></div>';
+      var wrap = $(".tkpub-pages", el.stage);
 
-      return page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise
-        .then(function () {
-          viewer.zoom = scale;
-          el.zoomLevel.textContent = Math.round(scale * 100) + "%";
-          $(".tkpub-pager input", el.modal).value = String(n);
-          $("[data-prev]", el.modal).disabled = n <= 1;
-          $("[data-next]", el.modal).disabled = n >= total;
-        });
-    }).catch(function () {
-      fallbackFrame("This page could not be rendered.");
-    }).then(function () {
-      viewer.rendering = false;
-      if (viewer.pending !== null && viewer.pending !== undefined) {
-        var next = viewer.pending;
-        viewer.pending = null;
-        renderPage(next);
+      viewer.pages = [];
+      for (var i = 1; i <= doc.numPages; i++) {
+        var shell = document.createElement("div");
+        shell.className = "tkpub-pg";
+        shell.setAttribute("data-page", i);
+        /* Assume uniform page size until proven otherwise — true of every
+           document these are, and it avoids N getPage() calls up front. */
+        shell.style.aspectRatio = base.width + " / " + base.height;
+        var canvas = document.createElement("canvas");
+        shell.appendChild(canvas);
+        wrap.appendChild(shell);
+        viewer.pages.push({ shell: shell, canvas: canvas, rendered: false, task: null });
       }
+
+      applyZoom();
+      setControls(true, doc.numPages);
+      $(".tkpub-pager input", el.modal).value = "1";
+
+      observePages();
+      bindStageGestures();
+      updateCurrentPage();
     });
   }
 
-  function zoomBy(delta) {
+  function stageWidth() {
+    /* 1px of slack stops a rounding error from producing a horizontal
+       scrollbar at exactly fit width. */
+    var pad = parseFloat(getComputedStyle(el.stage).paddingLeft) || 0;
+    return Math.max(el.stage.clientWidth - pad * 2 - 1, 200);
+  }
+
+  function fitScale(pdfWidth) {
+    return stageWidth() / pdfWidth;
+  }
+
+  /* Sets the CSS size of every page shell from fit x zoom. Canvases are
+     re-rendered separately; this is the cheap part that must feel instant. */
+  function applyZoom() {
+    var w = stageWidth() * viewer.zoom;
+    viewer.pages.forEach(function (p) { p.shell.style.width = w + "px"; });
+    el.stage.classList.toggle("is-zoomed", viewer.zoom > 1.02);
+    if (el.zoomLevel) el.zoomLevel.textContent = Math.round(viewer.zoom * 100) + "%";
+  }
+
+  function observePages() {
+    if (viewer.io) viewer.io.disconnect();
+    /* A generous margin means a page is already rendering by the time it
+       scrolls into view, so fast scrolling does not show blank sheets. */
+    viewer.io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var idx = Number(e.target.getAttribute("data-page")) - 1;
+        if (e.isIntersecting) renderPageAt(idx);
+      });
+    }, { root: el.stage, rootMargin: "150% 0px" });
+
+    viewer.pages.forEach(function (p) { viewer.io.observe(p.shell); });
+  }
+
+  function renderPageAt(idx) {
+    var p = viewer.pages[idx];
+    if (!p || p.rendered || p.task || !viewer.doc) return;
+
+    var token = viewer.token;
+    var wanted = viewer.zoom;
+
+    p.task = viewer.doc.getPage(idx + 1).then(function (page) {
+      if (token !== viewer.token) return;
+
+      /* Cap the backing store on very high-DPR phones: a 3x canvas of an A4
+         page at 4x zoom is 40 megapixels and will be dropped by the browser. */
+      var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      var css = p.shell.clientWidth;
+      var base = page.getViewport({ scale: 1 });
+      var scale = (css / base.width) * dpr;
+      var vp = page.getViewport({ scale: scale });
+
+      var canvas = p.canvas;
+      canvas.width = Math.round(vp.width);
+      canvas.height = Math.round(vp.height);
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
+
+      var task = page.render({ canvasContext: canvas.getContext("2d"), viewport: vp });
+      p.renderTask = task;
+      return task.promise.then(function () {
+        if (token !== viewer.token) return;
+        p.rendered = true;
+        p.zoomAt = wanted;
+        p.shell.classList.add("is-ready");
+      });
+    }).catch(function () {
+      /* A single failed page should not take the whole document down. */
+    }).then(function () {
+      p.task = null;
+      p.renderTask = null;
+    });
+  }
+
+  /* Drop canvases well outside the viewport so long documents stay light. */
+  function pruneFarPages() {
+    var cur = viewer.current - 1;
+    viewer.pages.forEach(function (p, i) {
+      if (Math.abs(i - cur) <= KEEP || !p.rendered) return;
+      p.canvas.width = 0;
+      p.canvas.height = 0;
+      p.rendered = false;
+      p.shell.classList.remove("is-ready");
+    });
+  }
+
+  /* ---- zoom ----------------------------------------------------------- */
+
+  function setZoom(next, focusX, focusY) {
     if (!viewer.doc) return;
-    viewer.fitWidth = false;
-    viewer.zoom = Math.min(Math.max(viewer.zoom + delta, 0.4), 3);
-    renderPage(viewer.page);
+    next = Math.min(Math.max(next, MIN_ZOOM), MAX_ZOOM);
+    if (Math.abs(next - viewer.zoom) < 0.005) return;
+
+    /* Keep whatever the reader was looking at under their finger. */
+    var stage = el.stage;
+    var cx = focusX === undefined ? stage.clientWidth / 2 : focusX;
+    var cy = focusY === undefined ? stage.clientHeight / 2 : focusY;
+    var ratio = next / viewer.zoom;
+    var sx = (stage.scrollLeft + cx) * ratio - cx;
+    var sy = (stage.scrollTop + cy) * ratio - cy;
+
+    viewer.zoom = next;
+    applyZoom();
+    stage.scrollLeft = sx;
+    stage.scrollTop = sy;
+
+    /* Re-render what is on screen at the new resolution. */
+    viewer.pages.forEach(function (p) {
+      if (p.rendered && Math.abs((p.zoomAt || 1) - next) > 0.01) {
+        p.rendered = false;
+        p.shell.classList.remove("is-ready");
+      }
+    });
+    renderAround();
+  }
+
+  function renderAround() {
+    var cur = viewer.current - 1;
+    for (var i = Math.max(0, cur - 1); i <= Math.min(viewer.pages.length - 1, cur + 1); i++) {
+      renderPageAt(i);
+    }
+  }
+
+  function zoomBy(step) {
+    setZoom(viewer.zoom + step);
+  }
+
+  /* ---- navigation ----------------------------------------------------- */
+
+  function gotoPage(n) {
+    if (!viewer.doc) return;
+    n = Math.min(Math.max(1, n | 0), viewer.pages.length);
+    var p = viewer.pages[n - 1];
+    if (!p) return;
+    el.stage.scrollTop = p.shell.offsetTop - 12;
+    viewer.current = n;
+    syncPager();
+  }
+
+  function updateCurrentPage() {
+    var mid = el.stage.scrollTop + el.stage.clientHeight * 0.35;
+    var found = 1;
+    for (var i = 0; i < viewer.pages.length; i++) {
+      if (viewer.pages[i].shell.offsetTop <= mid) found = i + 1; else break;
+    }
+    if (found !== viewer.current) {
+      viewer.current = found;
+      syncPager();
+      pruneFarPages();
+    }
+  }
+
+  function syncPager() {
+    var input = $(".tkpub-pager input", el.modal);
+    if (input && document.activeElement !== input) input.value = String(viewer.current);
+    var prev = $("[data-prev]", el.modal), next = $("[data-next]", el.modal);
+    if (prev) prev.disabled = viewer.current <= 1;
+    if (next) next.disabled = viewer.current >= viewer.pages.length;
+  }
+
+  /* ---- touch: pinch to zoom, double tap ------------------------------- */
+
+  function bindStageGestures() {
+    if (el.stage.__tkbound) return;
+    el.stage.__tkbound = true;
+
+    el.stage.addEventListener("scroll", function () {
+      if (viewer.scrollRaf) return;
+      viewer.scrollRaf = requestAnimationFrame(function () {
+        viewer.scrollRaf = 0;
+        updateCurrentPage();
+      });
+    }, { passive: true });
+
+    var pinch = null;
+
+    function dist(t) {
+      var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    el.stage.addEventListener("touchstart", function (ev) {
+      if (ev.touches.length !== 2 || !viewer.doc) return;
+      var r = el.stage.getBoundingClientRect();
+      pinch = {
+        d: dist(ev.touches),
+        zoom: viewer.zoom,
+        x: (ev.touches[0].clientX + ev.touches[1].clientX) / 2 - r.left,
+        y: (ev.touches[0].clientY + ev.touches[1].clientY) / 2 - r.top
+      };
+    }, { passive: true });
+
+    el.stage.addEventListener("touchmove", function (ev) {
+      if (!pinch || ev.touches.length !== 2) return;
+      ev.preventDefault();   // stop the browser zooming the whole page instead
+      var k = dist(ev.touches) / pinch.d;
+      setZoom(pinch.zoom * k, pinch.x, pinch.y);
+    }, { passive: false });
+
+    el.stage.addEventListener("touchend", function (ev) {
+      if (pinch && ev.touches.length < 2) pinch = null;
+    }, { passive: true });
+
+    /* Double tap toggles between fitting the width and a comfortable
+       reading zoom — the gesture people already use on photos and maps. */
+    var lastTap = 0;
+    el.stage.addEventListener("touchend", function (ev) {
+      if (ev.touches.length || !viewer.doc) return;
+      var now = Date.now();
+      if (now - lastTap < 300) {
+        var r = el.stage.getBoundingClientRect();
+        var t = ev.changedTouches[0];
+        setZoom(viewer.zoom > 1.2 ? 1 : 2, t.clientX - r.left, t.clientY - r.top);
+        lastTap = 0;
+      } else {
+        lastTap = now;
+      }
+    }, { passive: true });
+
+    /* Ctrl/⌘ + wheel is the desktop equivalent. */
+    el.stage.addEventListener("wheel", function (ev) {
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      ev.preventDefault();
+      var r = el.stage.getBoundingClientRect();
+      setZoom(viewer.zoom * (ev.deltaY < 0 ? 1.1 : 0.9), ev.clientX - r.left, ev.clientY - r.top);
+    }, { passive: false });
   }
 
   /* ------------------------------------------------------------------ */
@@ -864,8 +1124,8 @@
       var t = ev.target.closest("button, a");
       if (!t) return;
       if (t.hasAttribute("data-close")) closeViewer();
-      else if (t.hasAttribute("data-prev")) renderPage(viewer.page - 1);
-      else if (t.hasAttribute("data-next")) renderPage(viewer.page + 1);
+      else if (t.hasAttribute("data-prev")) gotoPage(viewer.current - 1);
+      else if (t.hasAttribute("data-next")) gotoPage(viewer.current + 1);
       else if (t.hasAttribute("data-zoomin")) zoomBy(0.25);
       else if (t.hasAttribute("data-zoomout")) zoomBy(-0.25);
       else if (t.hasAttribute("data-dl")) countDownload(Number(t.getAttribute("data-download")));
@@ -882,15 +1142,15 @@
     });
 
     $(".tkpub-pager input", el.modal).addEventListener("change", function () {
-      renderPage(parseInt(this.value, 10) || 1);
+      gotoPage(parseInt(this.value, 10) || 1);
     });
 
     document.addEventListener("keydown", function (ev) {
       if (!el.modal.classList.contains("is-open")) return;
       if (ev.key === "Escape") return closeViewer();
       if (ev.target.tagName === "INPUT") return;
-      if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); renderPage(viewer.page + 1); }
-      if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); renderPage(viewer.page - 1); }
+      if (ev.key === "ArrowRight" || ev.key === "PageDown") { ev.preventDefault(); gotoPage(viewer.current + 1); }
+      if (ev.key === "ArrowLeft" || ev.key === "PageUp") { ev.preventDefault(); gotoPage(viewer.current - 1); }
       if (ev.key === "+" || ev.key === "=") zoomBy(0.25);
       if (ev.key === "-") zoomBy(-0.25);
       if (ev.key === "Tab") trapFocus(ev);
@@ -898,7 +1158,13 @@
 
     /* Re-fit the page when the window changes size. */
     window.addEventListener("resize", debounce(function () {
-      if (viewer.doc && viewer.fitWidth) renderPage(viewer.page);
+      if (!viewer.doc) return;
+      /* Re-fit to the new width, keeping the reader on the same page. */
+      var was = viewer.current;
+      applyZoom();
+      viewer.pages.forEach(function (p) { p.rendered = false; p.shell.classList.remove("is-ready"); });
+      gotoPage(was);
+      renderAround();
     }, 220));
 
     /* Back button closes the viewer instead of leaving the page. */
@@ -964,7 +1230,6 @@
     el.live = $("#tkpub-live");
     el.modal = $("#tkpub-modal");
     el.stage = $("#tkpub-stage");
-    el.modalFoot = $("#tkpub-modal-foot-meta");
     el.zoomLevel = $(".tkpub-zoomlevel", el.modal);
 
     try {

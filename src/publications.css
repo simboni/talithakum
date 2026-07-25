@@ -503,14 +503,30 @@
    PDF viewer modal
    ========================================================================== */
 
+/* The reader sits above everything, including a theme's floating widgets.
+   z-index is deliberately near the maximum: BigHearts' back-to-top button
+   was drawing over the top of it. */
 .tkpub-modal {
-  position: fixed; inset: 0; z-index: 100000;
+  position: fixed; inset: 0; z-index: 2147483000;
   display: none;
-  background: rgba(28, 24, 22, .8);
+  background: rgba(28, 24, 22, .82);
   backdrop-filter: blur(3px);
   padding: 22px;
 }
 .tkpub-modal.is-open { display: flex; align-items: center; justify-content: center; }
+
+/* Locking the body by position:fixed rather than overflow:hidden — iOS
+   Safari ignores the latter and happily scrolls the page behind the reader.
+   publications.js stores and restores the scroll position around this. */
+body.tkpub-locked {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+/* Floating theme widgets would otherwise punch through the reader. */
+body.tkpub-locked [class*="back-to-top"],
+body.tkpub-locked [id*="back-to-top"],
+body.tkpub-locked [class*="backtotop"] { display: none !important; }
 
 .tkpub-modal-panel {
   background: var(--tk-surface);
@@ -525,68 +541,102 @@
 @keyframes tkpub-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } }
 @media (prefers-reduced-motion: reduce) { .tkpub-modal-panel { animation: none; } }
 
+/* --- Title bar -----------------------------------------------------------
+   Three fixed columns. The title can only ever be one line plus one line of
+   meta, so the bar has a predictable height and cannot collapse into a
+   column of single words when the title is long.
+   ------------------------------------------------------------------------ */
 .tkpub-modal-bar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--tk-line);
   background: var(--tk-canvas);
   flex-shrink: 0;
 }
-.tkpub-modal-titles { min-width: 0; flex: 1; }
+.tkpub-modal-titles { min-width: 0; }
 .tkpub-modal-titles h2 {
-  font-size: 15.5px; font-weight: 700; color: var(--tk-deep);
+  font-size: 15px; font-weight: 700; color: var(--tk-deep); line-height: 1.3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.tkpub-modal-titles p { font-size: 12.5px; color: var(--tk-muted); }
-.tkpub-modal-tools { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tkpub-modal-titles p {
+  font-size: 12px; color: var(--tk-muted); line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .tkpub-icbtn {
   border: 1px solid transparent; background: none; color: var(--tk-body);
-  width: 34px; height: 34px; border-radius: 8px;
-  display: grid; place-items: center;
+  min-width: 40px; height: 40px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 0 8px;
+  text-decoration: none;
   transition: background .15s, color .15s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
-.tkpub-icbtn svg { width: 17px; height: 17px; }
+.tkpub-icbtn svg { width: 18px; height: 18px; flex-shrink: 0; }
 .tkpub-icbtn:hover { background: var(--tk-line-soft); color: var(--tk-deep); }
-.tkpub-icbtn[disabled] { opacity: .35; pointer-events: none; }
+.tkpub-icbtn[disabled] { opacity: .32; pointer-events: none; }
 .tkpub-icbtn.is-close:hover { background: #fbe9e7; color: var(--tk-alert); }
-
-.tkpub-pager {
-  display: flex; align-items: center; gap: 4px;
-  background: var(--tk-surface);
-  border: 1px solid var(--tk-line);
-  border-radius: 8px;
-  padding: 2px;
+.tkpub-icbtn > span {
+  font-family: var(--tk-head-font);
+  font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .01em;
 }
-.tkpub-pager input {
-  width: 44px; text-align: center; font: inherit; font-size: 13px;
-  border: 0; background: none; color: var(--tk-ink);
-  padding: 5px 2px;
-}
-.tkpub-pager input:focus { outline: none; background: var(--tk-line-soft); border-radius: 4px; }
-.tkpub-pager .tkpub-pagecount { font-size: 13px; color: var(--tk-muted); padding-right: 8px; }
-.tkpub-zoomlevel { font-size: 13px; color: var(--tk-muted); min-width: 44px; text-align: center; }
 
+/* --- Stage ---------------------------------------------------------------
+   One continuous scroll of pages. overscroll-behavior stops a flick at the
+   end of the document from scrolling the page underneath.
+   ------------------------------------------------------------------------ */
 .tkpub-modal-stage {
   flex: 1;
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   background: #4a4442;
-  padding: 20px;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 16px;
   -webkit-overflow-scrolling: touch;
+  /* The pinch handler manages zoom itself; letting the browser also
+     double-tap-zoom the page makes both fight. */
+  touch-action: pan-x pan-y;
 }
-.tkpub-modal-stage canvas {
+.tkpub-modal-stage:not(.is-doc) {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+.tkpub-pages {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px;
+  min-width: min-content;
+  margin: 0 auto;
+}
+.tkpub-pg {
+  position: relative;
+  width: 100%;
   background: #fff;
-  box-shadow: 0 6px 22px rgba(0,0,0,.32);
-  max-width: 100%;
-  height: auto;
   border-radius: 2px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.34);
+  flex-shrink: 0;
+  overflow: hidden;
 }
+/* A faint sheet colour until the canvas lands, so scrolling ahead shows
+   pages rather than holes. */
+.tkpub-pg::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fff, #f3efec);
+  transition: opacity .18s;
+}
+.tkpub-pg.is-ready::after { opacity: 0; }
+.tkpub-pg canvas { display: block; width: 100%; height: auto; position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .tkpub-pg::after { transition: none; } }
+
 .tkpub-modal-stage iframe { width: 100%; height: 100%; border: 0; background: #fff; border-radius: 4px; }
 .tkpub-modal-stage.is-frame { padding: 0; display: block; }
 
 .tkpub-viewer-msg {
-  color: #fff; text-align: center; padding: 44px 24px; margin: auto;
+  color: #fff; text-align: center; padding: 40px 24px; margin: auto;
   max-width: 40ch;
 }
 .tkpub-viewer-msg h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #fff; }
@@ -602,17 +652,44 @@
 }
 @keyframes tkpub-spin { to { transform: rotate(360deg); } }
 
+/* --- Control bar --------------------------------------------------------- */
+
 .tkpub-modal-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--tk-line);
   background: var(--tk-canvas);
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
-.tkpub-modal-foot .tkpub-meta { margin: 0; }
+/* Paging and zoom are meaningless until a document has actually rendered. */
+.tkpub-modal:not(.has-controls) .tkpub-pager,
+.tkpub-modal:not(.has-controls) .tkpub-zoomgroup { visibility: hidden; }
 
-body.tkpub-locked { overflow: hidden; }
+.tkpub-pager, .tkpub-zoomgroup {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-line);
+  border-radius: 10px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+.tkpub-pager input {
+  width: 40px; text-align: center; font: inherit; font-size: 16px;
+  border: 0; background: none; color: var(--tk-ink);
+  padding: 6px 2px;
+}
+.tkpub-pager input:focus { outline: none; background: var(--tk-line-soft); border-radius: 5px; }
+.tkpub-pager .tkpub-pagecount {
+  font-size: 13px; color: var(--tk-muted); padding-right: 8px; white-space: nowrap;
+}
+.tkpub-zoomlevel {
+  font-size: 13px; color: var(--tk-muted); min-width: 46px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.tkpub-modal-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tkpub-modal-actions .is-wide { white-space: nowrap; }
 
 /* ==========================================================================
    Toasts
@@ -891,12 +968,67 @@ body.tkpub-locked { overflow: hidden; }
   }
   .tkpub-grid.is-list .tkpub-actions { padding-top: 4px; }
   .tkpub-views { margin-left: 0; }
-  .tkpub-modal { padding: 0; }
-  .tkpub-modal-panel { height: 100%; width: 100%; border-radius: 0; }
-  .tkpub-modal-stage { padding: 10px; }
   .tkpub-admin-bar .tkpub-admin-actions { margin-left: 0; width: 100%; }
   .tkpub-toasts { left: 14px; right: 14px; bottom: 14px; }
   .tkpub-toast { max-width: none; }
+}
+
+/* ==========================================================================
+   The reader on a phone
+
+   Nearly all readers are on one, so this is the case that has to be right,
+   not the fallback. The panel takes the whole screen, the title bar keeps a
+   fixed height, and everything that is not paging, zooming or copying a link
+   is removed so the three remaining controls can be full-size touch targets.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .tkpub-modal { padding: 0; }
+
+  .tkpub-modal-panel {
+    width: 100%; border-radius: 0;
+    height: 100vh;
+    /* dvh tracks the browser chrome collapsing as you scroll; vh does not,
+       and the control bar ends up under the address bar without it. */
+    height: 100dvh;
+    animation: none;
+  }
+
+  .tkpub-modal-bar { padding: 8px 8px 8px 4px; gap: 6px; }
+  .tkpub-modal-titles h2 { font-size: 14.5px; }
+  .tkpub-modal-titles p { font-size: 11.5px; }
+
+  .tkpub-modal-stage { padding: 8px; }
+  .tkpub-pages { gap: 10px; }
+
+  .tkpub-modal-foot { padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Download already sits in the title bar, and the address bar already
+     holds the shareable link, so the bottom bar keeps only what the hands
+     need while reading. */
+  .tkpub-modal-actions .is-wide,
+  .tkpub-modal-actions [data-tab],
+  .tkpub-zoomlevel { display: none; }
+  .tkpub-modal-actions .tkpub-icbtn > span { display: none; }
+
+  .tkpub-icbtn { min-width: 44px; height: 44px; padding: 0 6px; }
+  .tkpub-pager input { width: 34px; }
+  .tkpub-pager .tkpub-pagecount { padding-right: 6px; font-size: 12.5px; }
+}
+
+@media (max-width: 380px) {
+  .tkpub-icbtn { min-width: 42px; height: 42px; }
+  .tkpub-modal-titles p { display: none; }   /* title alone; every mm counts */
+}
+
+/* A phone held sideways has almost no height to spare — give the document
+   all of it and shrink the two bars. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 480px) {
+  .tkpub-modal-bar { padding: 4px 8px; }
+  .tkpub-modal-titles p { display: none; }
+  .tkpub-modal-foot { padding: 4px 8px; }
+  .tkpub-icbtn { height: 38px; min-width: 38px; }
+  .tkpub-modal-stage { padding: 6px; }
 }
 
 @media print {

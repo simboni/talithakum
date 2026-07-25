@@ -80,29 +80,46 @@
 
 </div>
 
-<!-- PDF viewer. Lives outside .tkpub-toolbar so it can sit above everything. -->
+<!-- Document reader.
+     Layout is deliberately three fixed bands: a title bar that never grows, a
+     scrolling stage, and a control bar. On a phone the title bar previously
+     collapsed into a tall column of single words because the controls were
+     competing with it for width — the controls now live at the bottom, where
+     thumbs are, and the title gets the whole top row to itself. -->
 <div class="tkpub tkpub-modal" id="tkpub-modal" role="dialog" aria-modal="true" aria-label="Document reader">
   <div class="tkpub-modal-panel">
 
     <div class="tkpub-modal-bar">
+      <button type="button" class="tkpub-icbtn is-close" data-close aria-label="Close the reader">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+
       <div class="tkpub-modal-titles">
         <h2></h2>
         <p></p>
       </div>
 
-      <div class="tkpub-modal-tools">
-        <div class="tkpub-pager">
-          <button type="button" class="tkpub-icbtn" data-prev aria-label="Previous page">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
-          </button>
-          <label class="tkpub-sr" for="tkpub-page-input">Page number</label>
-          <input type="text" id="tkpub-page-input" inputmode="numeric" value="1">
-          <span class="tkpub-pagecount">/ 1</span>
-          <button type="button" class="tkpub-icbtn" data-next aria-label="Next page">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
-          </button>
-        </div>
+      <a class="tkpub-icbtn is-grab" data-dl href="#" download aria-label="Download this document">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7.5 11 4.5 4.5 4.5-4.5"></path><path d="M4 20h16"></path></svg>
+      </a>
+    </div>
 
+    <div class="tkpub-modal-stage" id="tkpub-stage"></div>
+
+    <div class="tkpub-modal-foot">
+      <div class="tkpub-pager">
+        <button type="button" class="tkpub-icbtn" data-prev aria-label="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
+        </button>
+        <label class="tkpub-sr" for="tkpub-page-input">Page number</label>
+        <input type="text" id="tkpub-page-input" inputmode="numeric" pattern="[0-9]*" value="1">
+        <span class="tkpub-pagecount">/ 1</span>
+        <button type="button" class="tkpub-icbtn" data-next aria-label="Next page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
+        </button>
+      </div>
+
+      <div class="tkpub-zoomgroup">
         <button type="button" class="tkpub-icbtn tkpub-zoom" data-zoomout aria-label="Zoom out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M8.5 11h5M20 20l-3.5-3.5"></path></svg>
         </button>
@@ -110,27 +127,18 @@
         <button type="button" class="tkpub-icbtn tkpub-zoom" data-zoomin aria-label="Zoom in">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M11 8.5v5M8.5 11h5M20 20l-3.5-3.5"></path></svg>
         </button>
-
-        <button type="button" class="tkpub-icbtn is-close" data-close aria-label="Close the reader">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-        </button>
       </div>
-    </div>
 
-    <div class="tkpub-modal-stage" id="tkpub-stage"></div>
-
-    <div class="tkpub-modal-foot">
-      <div id="tkpub-modal-foot-meta"></div>
-      <div class="tkpub-actions" style="padding:0;margin:0">
-        <button type="button" class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-copy>
+      <div class="tkpub-modal-actions">
+        <button type="button" class="tkpub-icbtn" data-copy aria-label="Copy a link to this document">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg>
-          Copy link
+          <span>Copy link</span>
         </button>
-        <a class="tkpub-btn tkpub-btn-ghost tkpub-btn-sm" data-tab href="#" target="_blank" rel="noopener">
+        <a class="tkpub-icbtn" data-tab href="#" target="_blank" rel="noopener" aria-label="Open the PDF in a new tab">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4 11 13"></path><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path></svg>
-          Full screen
+          <span>Full screen</span>
         </a>
-        <a class="tkpub-btn tkpub-btn-primary tkpub-btn-sm" data-dl href="#" download>
+        <a class="tkpub-btn tkpub-btn-primary tkpub-btn-sm is-wide" data-dl href="#" download>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7.5 11 4.5 4.5 4.5-4.5"></path><path d="M4 20h16"></path></svg>
           Download
         </a>
