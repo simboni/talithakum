@@ -20,3 +20,4 @@ dist/publications/shots/
 # Symlink to test/node_modules so build-docs.mjs can find playwright
 /node_modules
 test/videos-harness.html
+test/team-harness.html

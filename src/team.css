@@ -1,0 +1,392 @@
+/* ==========================================================================
+   Talitha Kum Kenya — Team
+
+   The smallest of the three pages. A person is a name, a role, a group and
+   a photograph, so there is no engine here at all: one fetch, one grid.
+
+   Scoped under .tkteam so nothing leaks into the BigHearts theme.
+   ========================================================================== */
+
+.tkteam {
+  /* Same tokens as the publications and videos pages. */
+  --t-accent: #F74F22;
+  --t-accent-dark: #d93d13;
+  --t-accent-soft: #fdeae3;
+  --t-gold: #FFAC00;
+  --t-deep: #232323;
+  --t-body: #616161;
+  --t-muted: #8c8c8c;
+  --t-line: #e7e4e1;
+  --t-line-soft: #f4f1ee;
+  --t-surface: #fff;
+  --t-canvas: #faf8f6;
+  --t-radius: 10px;
+  --t-pill: 28px;
+  --t-shadow: 11px 10px 38px 0 rgba(0,0,0,.1);
+  --t-font: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --t-head: "Quicksand", "Nunito Sans", -apple-system, "Segoe UI", sans-serif;
+
+  font-family: var(--t-font);
+  color: var(--t-body);
+  line-height: 1.7;
+}
+
+.tkteam *, .tkteam *::before, .tkteam *::after { box-sizing: border-box; }
+.tkteam h1, .tkteam h2, .tkteam h3, .tkteam p, .tkteam ul { margin: 0; padding: 0; }
+.tkteam img { max-width: 100%; display: block; }
+.tkteam button { font: inherit; color: inherit; cursor: pointer; }
+.tkteam h1, .tkteam h2, .tkteam h3 { font-family: var(--t-head); font-weight: 700; color: var(--t-deep); }
+.tkteam :focus-visible { outline: 3px solid var(--t-gold); outline-offset: 2px; border-radius: 4px; }
+
+.tkteam-sr {
+  position: absolute !important; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* --- Header -------------------------------------------------------------- */
+
+.tkteam-head { margin-bottom: 20px; }
+.tkteam-eyebrow {
+  display: inline-block;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--t-accent); background: var(--t-accent-soft);
+  padding: 6px 12px; border-radius: var(--t-pill); margin-bottom: 12px;
+}
+.tkteam-title { font-size: clamp(27px, 4vw, 42px); line-height: 1.15; letter-spacing: -.02em; }
+.tkteam-lede { margin-top: 9px; max-width: 62ch; font-size: 16px; }
+
+/* --- Group filter --------------------------------------------------------
+   Built from what is published, so it disappears entirely while there is
+   only one group. A swipe rail on a phone, never a wrapped mess.
+   ------------------------------------------------------------------------ */
+
+.tkteam-chips {
+  display: flex; gap: 8px; margin-bottom: 24px;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.tkteam-chips:empty { display: none; }
+.tkteam-chips::-webkit-scrollbar { display: none; }
+.tkteam-chip {
+  border: 1px solid var(--t-line); background: var(--t-surface); color: var(--t-body);
+  font-size: 13.5px; padding: 9px 16px; border-radius: var(--t-pill);
+  white-space: nowrap; flex-shrink: 0; min-height: 44px;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.tkteam-chip[aria-pressed="true"] {
+  background: var(--t-accent); border-color: var(--t-accent); color: #fff; font-weight: 600;
+}
+.tkteam-chip b {
+  font-size: 11.5px; background: var(--t-line-soft); color: var(--t-muted);
+  padding: 1px 6px; border-radius: var(--t-pill); font-weight: 600;
+}
+.tkteam-chip[aria-pressed="true"] b { background: rgba(255,255,255,.22); color: #fff; }
+
+/* --- Groups and grid ------------------------------------------------------ */
+
+.tkteam-group + .tkteam-group { margin-top: 40px; }
+.tkteam-gh {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding-bottom: 10px; margin-bottom: 18px; border-bottom: 2px solid var(--t-line-soft);
+}
+.tkteam-gh h2 { font-size: clamp(18px, 2.2vw, 23px); }
+.tkteam-gh span { font-size: 13px; color: var(--t-muted); }
+
+/* 220px cards: five across a wide column, two across a phone. A team page
+   is read by scanning faces, so more of them on screen is the whole job. */
+.tkteam-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 22px 20px;
+}
+
+.tkteam-card {
+  background: var(--t-surface); border: 1px solid var(--t-line);
+  border-radius: var(--t-radius); overflow: hidden;
+  display: flex; flex-direction: column; text-align: left;
+  padding: 0; width: 100%; border-width: 1px;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+}
+button.tkteam-card { cursor: pointer; }
+button.tkteam-card:hover { transform: translateY(-3px); box-shadow: var(--t-shadow); border-color: var(--t-accent); }
+
+/* --- Portrait -------------------------------------------------------------
+   4:5 with the crop biased upwards: a group photograph cropped square puts
+   the chin in the middle, this keeps the face where the eye expects it.
+   ------------------------------------------------------------------------ */
+
+.tkteam-ph {
+  position: relative; width: 100%; aspect-ratio: 4 / 5;
+  background: var(--t-line-soft); overflow: hidden;
+}
+.tkteam-ph img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 22%;
+  opacity: 0; transition: opacity .25s ease, transform .3s ease;
+}
+.tkteam-ph img.is-on { opacity: 1; }
+button.tkteam-card:hover .tkteam-ph img { transform: scale(1.04); }
+
+/* Monogram cover. Drawn under every portrait, so it is what a visitor sees
+   while a photograph loads, and what stays if there is none. */
+.tkteam-mono {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: linear-gradient(150deg, var(--t-c1, #F74F22), var(--t-c2, #B32E0B));
+  color: #fff; font-family: var(--t-head); font-weight: 700;
+  font-size: clamp(30px, 4.6vw, 44px); letter-spacing: .04em;
+}
+.tkteam-ph::after {
+  content: ""; position: absolute; inset: 55% 0 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.30));
+}
+
+.tkteam-body { padding: 13px 14px 15px; display: flex; flex-direction: column; flex: 1; }
+.tkteam-name { font-size: 15.5px; line-height: 1.3; }
+.tkteam-role {
+  margin-top: 4px; font-size: 12.5px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--t-accent);
+}
+.tkteam-more {
+  margin-top: 9px; font-size: 12.5px; color: var(--t-muted);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.tkteam-more svg { width: 13px; height: 13px; }
+
+/* --- States -------------------------------------------------------------- */
+
+.tkteam-state {
+  text-align: center; padding: 44px 22px;
+  background: var(--t-surface); border: 1px dashed var(--t-line); border-radius: var(--t-radius);
+}
+.tkteam-state h3 { font-size: 17px; margin-bottom: 6px; }
+.tkteam-state p { font-size: 14.5px; color: var(--t-muted); max-width: 46ch; margin: 0 auto; }
+.tkteam-skel {
+  border-radius: var(--t-radius); overflow: hidden;
+  background: var(--t-surface); border: 1px solid var(--t-line);
+}
+.tkteam-skel i, .tkteam-skel span {
+  display: block;
+  background: linear-gradient(90deg, var(--t-line-soft) 25%, #e8e2de 37%, var(--t-line-soft) 63%);
+  background-size: 400% 100%; animation: tkteam-sh 1.4s ease infinite;
+}
+.tkteam-skel i { aspect-ratio: 4/5; }
+.tkteam-skel span { height: 11px; margin: 13px 14px; border-radius: 4px; }
+@keyframes tkteam-sh { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) {
+  .tkteam-skel i, .tkteam-skel span { animation: none; }
+  .tkteam-card, .tkteam-ph img { transition: none; }
+}
+
+/* --- Profile -------------------------------------------------------------
+   Opens only for someone who has a biography. Nobody is made to tap a card
+   that has nothing behind it.
+   ------------------------------------------------------------------------ */
+
+.tkteam-modal {
+  position: fixed; inset: 0; z-index: 2147483000; display: none;
+  background: rgba(20,15,13,.9); padding: 20px; overflow-y: auto;
+}
+.tkteam-modal.is-open { display: flex; align-items: center; justify-content: center; }
+body.tkteam-locked { position: fixed; width: 100%; overflow: hidden; }
+body.tkteam-locked [class*="back-to-top"],
+body.tkteam-locked [id*="back-to-top"] { display: none !important; }
+
+.tkteam-sheet {
+  background: var(--t-surface); border-radius: var(--t-radius); overflow: hidden;
+  width: min(760px, 100%); display: grid; grid-template-columns: 260px 1fr;
+}
+.tkteam-sheet .tkteam-ph { aspect-ratio: auto; height: 100%; min-height: 300px; }
+.tkteam-sheet .tkteam-ph::after { display: none; }
+.tkteam-sheet .tkteam-ph img { object-position: center 20%; }
+.tkteam-sbody { padding: 24px 26px 26px; position: relative; }
+.tkteam-sbody h2 { font-size: clamp(20px, 2.4vw, 26px); line-height: 1.2; padding-right: 44px; }
+.tkteam-srole {
+  margin-top: 6px; font-size: 13px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--t-accent);
+}
+.tkteam-sgroup {
+  display: inline-block; margin-top: 12px;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  background: var(--t-line-soft); color: var(--t-body);
+  padding: 4px 11px; border-radius: var(--t-pill);
+}
+.tkteam-sbio { margin-top: 14px; font-size: 15px; }
+.tkteam-x {
+  position: absolute; top: 16px; right: 16px;
+  border: 1px solid var(--t-line); background: var(--t-surface); color: var(--t-body);
+  min-width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
+}
+.tkteam-x:hover { background: var(--t-accent-soft); color: var(--t-accent); border-color: var(--t-accent); }
+.tkteam-x svg { width: 18px; height: 18px; }
+
+/* --- Admin ---------------------------------------------------------------- */
+
+.tkteam-admin { display: none; margin-bottom: 22px; }
+.tkteam-admin.is-visible { display: block; }
+.tkteam-abar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--t-deep); color: #fff; border-radius: var(--t-radius); padding: 12px 16px;
+}
+.tkteam-abar h2 { color: #fff; font-size: 15px; }
+.tkteam-abar p { font-size: 12.5px; color: rgba(255,255,255,.65); }
+.tkteam-abar .tkteam-aact { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.tkteam-who {
+  font-size: 12.5px; color: rgba(255,255,255,.82);
+  background: rgba(255,255,255,.1); padding: 6px 11px; border-radius: var(--t-pill);
+}
+.tkteam-abody {
+  display: none; background: var(--t-surface);
+  border: 1px solid var(--t-line); border-top: 0;
+  border-radius: 0 0 var(--t-radius) var(--t-radius);
+  margin-top: -12px; padding: 24px 18px 18px;
+}
+.tkteam-admin.is-open .tkteam-abody { display: block; }
+.tkteam-admin.is-open .tkteam-abar { border-radius: var(--t-radius) var(--t-radius) 0 0; }
+
+.tkteam-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--t-line); margin-bottom: 20px; }
+.tkteam-tabs button {
+  border: 0; background: none; color: var(--t-muted); font-size: 14px; font-weight: 600;
+  padding: 12px 15px; border-bottom: 2px solid transparent; margin-bottom: -1px; min-height: 44px;
+}
+.tkteam-tabs button[aria-selected="true"] { color: var(--t-accent); border-bottom-color: var(--t-accent); }
+
+.tkteam-f { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.tkteam-f > label, .tkteam-f > .lbl { font-size: 13px; font-weight: 700; color: var(--t-deep); }
+.tkteam-f input[type=text], .tkteam-f input[type=url], .tkteam-f input[type=number],
+.tkteam-f input[type=password], .tkteam-f select, .tkteam-f textarea {
+  font: inherit; font-size: 16px; color: var(--t-deep);
+  background: var(--t-canvas); border: 1px solid var(--t-line);
+  border-radius: 8px; padding: 11px 12px; width: 100%; min-height: 46px;
+}
+.tkteam-f textarea { min-height: 92px; resize: vertical; line-height: 1.55; }
+.tkteam-f input:focus, .tkteam-f select:focus, .tkteam-f textarea:focus {
+  background: var(--t-surface); border-color: var(--t-accent); outline: none;
+  box-shadow: 0 0 0 3px var(--t-accent-soft);
+}
+.tkteam-hint { font-size: 12.5px; color: var(--t-muted); }
+.tkteam-err { font-size: 12.5px; color: #d0342c; font-weight: 600; }
+.tkteam-bad { border-color: #d0342c !important; background: #fdf6f5 !important; }
+.tkteam-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Photo picker: a file from the phone, or a link already in the library. */
+.tkteam-pick { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.tkteam-drop {
+  position: relative; width: 96px; aspect-ratio: 4/5; flex-shrink: 0;
+  border-radius: 8px; overflow: hidden; background: var(--t-line-soft);
+  border: 1px dashed var(--t-line);
+}
+.tkteam-drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
+.tkteam-pick > div { flex: 1; min-width: 200px; }
+.tkteam-file { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.tkteam-up {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; padding: 10px 16px; border-radius: var(--t-pill);
+  border: 2px solid var(--t-line); background: var(--t-surface); color: var(--t-body);
+  font-family: var(--t-head); font-size: 13px; font-weight: 700; text-transform: uppercase;
+}
+.tkteam-up:hover { border-color: var(--t-accent); color: var(--t-accent); }
+.tkteam-up svg { width: 15px; height: 15px; }
+
+.tkteam-note {
+  background: #fff8e8; border-left: 3px solid var(--t-gold);
+  border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 13px; color: #6b5316;
+  margin-bottom: 18px;
+}
+.tkteam-callout {
+  background: var(--t-accent-soft); border-left: 3px solid var(--t-accent);
+  border-radius: 0 8px 8px 0; padding: 13px 15px; font-size: 13.5px;
+  color: var(--t-accent-dark); margin-bottom: 18px;
+}
+
+.tkteam-foot {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--t-line-soft);
+}
+.tkteam-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--t-head); font-size: 14px; font-weight: 700;
+  text-transform: uppercase; border-radius: var(--t-pill);
+  padding: 12px 22px; min-height: 46px; border: 2px solid transparent;
+  text-decoration: none; white-space: nowrap;
+}
+.tkteam-p { background: var(--t-accent); border-color: var(--t-accent); color: #fff; }
+.tkteam-p:hover { background: var(--t-gold); border-color: var(--t-gold); color: #fff; }
+.tkteam-g { border-color: var(--t-line); color: var(--t-body); background: transparent; }
+.tkteam-g:hover { border-color: var(--t-accent); color: var(--t-accent); }
+.tkteam-btn[disabled] { opacity: .55; pointer-events: none; }
+.tkteam-abar .tkteam-p { background: var(--t-gold); border-color: var(--t-gold); color: #3d2a06; }
+.tkteam-sm { padding: 9px 16px; font-size: 12.5px; min-height: 44px; }
+
+.tkteam-rows { display: flex; flex-direction: column; gap: 8px; }
+.tkteam-row {
+  display: grid; grid-template-columns: 44px 1fr auto auto; gap: 12px; align-items: center;
+  border: 1px solid var(--t-line); border-radius: 8px; padding: 9px 11px;
+}
+.tkteam-rowimg {
+  position: relative; width: 44px; aspect-ratio: 4/5; overflow: hidden;
+  border-radius: 6px; background: var(--t-line-soft);
+}
+.tkteam-rowimg img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 22%; opacity: 0; transition: opacity .2s ease;
+}
+.tkteam-rowimg img.is-on { opacity: 1; }
+.tkteam-rowimg .tkteam-mono { font-size: 15px; }
+.tkteam-row b {
+  display: block; font-size: 14px; color: var(--t-deep);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tkteam-row small { font-size: 12.5px; color: var(--t-muted); }
+.tkteam-st {
+  font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: var(--t-pill);
+}
+.tkteam-st.is-publish { background: var(--t-accent-soft); color: var(--t-accent-dark); }
+.tkteam-st.is-draft { background: #fff4dc; color: #9a6a12; }
+.tkteam-del {
+  border: 1px solid transparent; background: none; color: var(--t-muted);
+  min-width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center;
+}
+.tkteam-del:hover { background: #fbe9e7; color: #d0342c; }
+.tkteam-del svg { width: 17px; height: 17px; }
+
+/* --- Toasts -------------------------------------------------------------- */
+
+.tkteam-toasts {
+  position: fixed; z-index: 2147483001; right: 16px; bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.tkteam-toast {
+  background: var(--t-deep); color: #fff; font-size: 14px;
+  padding: 12px 16px; border-radius: 8px; max-width: 340px;
+  box-shadow: 0 20px 50px -18px rgba(0,0,0,.5);
+}
+.tkteam-toast.is-ok { background: var(--t-accent-dark); }
+.tkteam-toast.is-err { background: #d0342c; }
+
+/* --- Mobile --------------------------------------------------------------
+   Two portraits to a row all the way down to a 320px screen. One giant card
+   per screen would turn a board of ten into ten screens of scrolling.
+   ------------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .tkteam-sheet { grid-template-columns: 1fr; }
+  .tkteam-sheet .tkteam-ph { aspect-ratio: 3 / 2; min-height: 0; }
+  .tkteam-two { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .tkteam-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+  .tkteam-body { padding: 11px 11px 13px; }
+  .tkteam-name { font-size: 14px; }
+  .tkteam-role { font-size: 11.5px; }
+  button.tkteam-card:hover { transform: none; box-shadow: none; }
+  .tkteam-group + .tkteam-group { margin-top: 30px; }
+  .tkteam-modal { padding: 0; align-items: flex-start; }
+  .tkteam-sheet { width: 100%; border-radius: 0; min-height: 100%; }
+  .tkteam-sbody { padding: 20px 16px 28px; }
+  .tkteam-abar .tkteam-aact { margin-left: 0; width: 100%; }
+  .tkteam-abar .tkteam-aact .tkteam-btn { flex: 1; }
+  .tkteam-toasts { left: 14px; right: 14px; }
+  .tkteam-toast { max-width: none; }
+}
+
+@media print { .tkteam-chips, .tkteam-admin, .tkteam-modal, .tkteam-toasts { display: none !important; } }
