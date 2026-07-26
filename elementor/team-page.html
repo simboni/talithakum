@@ -466,11 +466,11 @@ body.tkteam-locked [id*="back-to-top"] { display: none !important; }
      Post title   = the person's name
      Post excerpt = the short biography, if there is one
 
-   Access works exactly as it does on the other pages: the panel is drawn
-   only for logged-in users, signs itself in with the REST nonce when
-   plugin/tkpub-nonce-snippet.php is installed, and falls back to an
-   Application Password otherwise. WordPress re-checks capabilities on the
-   server for every write, so the front end is convenience, not security.
+   Access is the WordPress session and nothing else. The panel is drawn only
+   for logged-in users and signs itself in with the REST nonce printed by
+   plugin/tkpub-nonce-snippet.php — no password is asked for or stored here.
+   WordPress re-checks capabilities on the server for every write, so the
+   front end is convenience, not security.
    ========================================================================== */
 
 (function () {
