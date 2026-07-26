@@ -39,6 +39,35 @@
       "National Coordinator", "Programme Officer", "Project Officer",
       "Finance Officer", "Communications Officer", "Administrator",
       "Counsellor", "Social Worker", "Field Officer", "Volunteer"
+    ],
+
+    /* ---- the board, built into the page ------------------------------
+       So the page is not empty on the day it goes up. These are shown
+       ONLY while nothing has been published under the team category —
+       publish one real person in the panel and this list disappears by
+       itself. Nothing here is a WordPress post, so nothing here can be
+       edited or deleted from the panel.
+
+       The photo links point at the media library. A link that is not
+       there yet simply shows the person's initials instead, so the page
+       is never broken by a missing file. */
+    media: "https://talithakumraht.org/wp-content/uploads/2026/07/",
+    seed: [
+      { name: "Sr. Joyce Nyagucha", role: "Board Vice Chair", order: 20,
+        photo: "sr-joyce-nyagucha-board-vice-chair.jpg" },
+      /* No photograph yet: the print supplied under this name is a second
+         copy of Sr. Matilda Baabuo's. Her card shows MG until it arrives. */
+      { name: "Sr. Mary Gitau", role: "Board Treasurer", order: 30, photo: "" },
+      { name: "Sr. Catherine Mutindi", role: "Board Member", order: 50,
+        photo: "sr-catherine-mutindi-board-member.jpg" },
+      { name: "Sr. Matilda Baabuo", role: "Board Member", order: 50,
+        photo: "sr-matilda-baabuo-board-member.jpg" },
+      { name: "Sr. Pasilisa Namikoye", role: "Board Member", order: 50,
+        photo: "sr-pasilisa-namikoye-board-member.jpg" },
+      { name: "Bro. Bernard Juma", role: "Board Member", order: 50,
+        photo: "bro-bernard-juma-board-member.jpg" },
+      { name: "Bildad Keke", role: "Board Member", order: 50,
+        photo: "bildadrd-keke-board-member.jpg" }
     ]
   };
 
@@ -354,7 +383,24 @@
       })
       .then(function (items) {
         state.all = items.map(normalise).filter(function (p) { return p.name; });
+        state.seeded = false;
+        if (!state.all.length) { state.all = seedPeople(); state.seeded = state.all.length > 0; }
       });
+  }
+
+  /* The built-in board, shaped exactly like a person read from WordPress so
+     nothing downstream has to know the difference. */
+  function seedPeople() {
+    return (CONFIG.seed || []).map(function (s, i) {
+      return {
+        id: 0, slug: "seed-" + i, status: "publish", seed: true,
+        name: s.name, role: s.role || "",
+        group: s.group || CONFIG.groups[0],
+        photo: s.photo ? (/^https?:/i.test(s.photo) ? s.photo : CONFIG.media + s.photo) : "",
+        order: typeof s.order === "number" ? s.order : 50,
+        bio: s.bio || ""
+      };
+    });
   }
 
   function boot() {
@@ -378,9 +424,18 @@
       if (slug) open(slug, false);
       admin();
     }).catch(function (err) {
+      /* Even a missing category leaves the page looking finished: the
+         built-in board stands in, and the panel reports the real problem
+         to whoever can fix it. */
       el.groups.innerHTML = "";
-      el.empty.innerHTML = '<div class="tkteam-state"><h3>The team could not be loaded</h3><p>' +
-        esc(err.message || "Something went wrong.") + "</p></div>";
+      state.all = seedPeople();
+      state.seeded = state.all.length > 0;
+      state.error = err.message || "Something went wrong.";
+      if (state.seeded) paint();
+      else {
+        el.empty.innerHTML = '<div class="tkteam-state"><h3>The team could not be loaded</h3><p>' +
+          esc(state.error) + "</p></div>";
+      }
       admin();
     });
   }
@@ -389,12 +444,15 @@
      Staff panel
      ====================================================================== */
 
-  var auth = { header: null, nonce: null, user: null };
+  /* Sign-in is the WordPress session and nothing else. No password is asked
+     for or stored here: the browser already holds the login cookie, and the
+     nonce printed by plugin/tkpub-nonce-snippet.php is what lets the REST
+     API trust it. WordPress re-checks capabilities on every write. */
+  var auth = { nonce: null, user: null };
 
   function authHeaders(extra) {
     var h = Object.assign({}, extra || {});
-    if (auth.header) h.Authorization = auth.header;
-    else if (auth.nonce) h["X-WP-Nonce"] = auth.nonce;
+    if (auth.nonce) h["X-WP-Nonce"] = auth.nonce;
     return h;
   }
   function api(path, opts) {
@@ -402,7 +460,6 @@
     opts.headers = authHeaders(opts.headers);
     return getJSON(path, opts.params, opts);
   }
-  function usingCookie() { return !!auth.nonce && !auth.header; }
 
   var termCache = {};
   function ensureGroup(name) {
@@ -445,24 +502,26 @@
     });
   }
 
+  /* Shown only when the session cannot be used — almost always because the
+     nonce snippet is not installed. There is nothing for staff to type. */
   function loginMarkup() {
-    return '<div class="tkteam-callout"><b>Signing in.</b> If the site prints a REST nonce ' +
-      "you are signed in automatically. Otherwise use your WordPress username and an " +
-      "Application Password from Users → Profile.</div>" +
-      '<form id="tkteam-login" novalidate style="max-width:440px">' +
-        '<div class="tkteam-f"><label for="tkteam-u">WordPress username</label>' +
-          '<input type="text" id="tkteam-u" autocomplete="username" required></div>' +
-        '<div class="tkteam-f"><label for="tkteam-pw">Application Password</label>' +
-          '<input type="password" id="tkteam-pw" autocomplete="current-password" ' +
-            'placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" required>' +
-          '<span class="tkteam-hint">Spaces are removed automatically.</span></div>' +
-        '<p class="tkteam-err" id="tkteam-lerr" hidden></p>' +
-        '<button type="submit" class="tkteam-btn tkteam-p">Sign in</button>' +
-      "</form>";
+    return '<div class="tkteam-callout"><b>Not able to publish from here yet.</b> ' +
+      "This panel uses your WordPress login, so there is no password to enter. " +
+      "It needs the site to print a REST nonce, which the <b>TK Publications " +
+      "nonce snippet</b> plugin does.</div>" +
+      '<p class="tkteam-hint" style="max-width:52ch">If the plugin is installed and you ' +
+      "still see this, sign out of WordPress and back in — the nonce expires with " +
+      "the session. In the meantime you can add people from " +
+      "<b>Posts &rarr; Add New</b> in the WordPress admin.</p>";
   }
 
   function formMarkup() {
     return '<form id="tkteam-form" novalidate>' +
+      (state.seeded ? '<div class="tkteam-callout"><b>The board on the page is built into it.</b> ' +
+        "Nobody has been published yet, so the page is showing the seven names written " +
+        "into the code. The moment you publish one real person here, that built-in list " +
+        "disappears and only what you publish is shown &mdash; so publish all of them, " +
+        "not some.</div>" : "") +
       '<div class="tkteam-note"><b>Before you publish.</b> Use a photograph the person has ' +
         "agreed may appear on a public website, and the name and title they want shown. " +
         "Staff working directly with survivors may prefer a first name and a role only.</div>" +
@@ -611,7 +670,11 @@
       categories: state.parentId, per_page: 100, status: "publish,draft,pending",
       orderby: "date", order: "asc", _embed: 1
     } }).then(function (items) {
-      if (!items.length) { host.innerHTML = '<p class="tkteam-hint">Nobody has been added yet.</p>'; return; }
+      if (!items.length) {
+        host.innerHTML = '<p class="tkteam-hint">Nobody has been published yet. The board ' +
+          "on the page is the built-in list.</p>";
+        return;
+      }
       host.innerHTML = items.map(normalise).sort(byOrder).map(function (p) {
         return '<div class="tkteam-row">' +
           photoMarkup(p, "tkteam-rowimg") +
@@ -638,8 +701,8 @@
   function signedIn() {
     $("#tkteam-auth").hidden = true;
     $("#tkteam-main").hidden = false;
-    $("#tkteam-asub").textContent = usingCookie()
-      ? "Signed in with your WordPress session." : "Add someone, give them a role, publish.";
+    $("#tkteam-asub").textContent = state.error
+      ? state.error : "Signed in with your WordPress session.";
     var host = $("#tkteam-admin");
     $("#tkteam-aact").innerHTML =
       '<span class="tkteam-who">' + esc(auth.user.name) + "</span>" +
@@ -673,18 +736,7 @@
 
     host.addEventListener("submit", function (ev) {
       ev.preventDefault();
-      if (ev.target.id === "tkteam-form") return save("publish");
-      if (ev.target.id !== "tkteam-login") return;
-
-      var e = $("#tkteam-lerr");
-      e.hidden = true;
-      auth.header = "Basic " + btoa($("#tkteam-u").value.trim() + ":" + $("#tkteam-pw").value.replace(/\s+/g, ""));
-      verify().then(signedIn, function (x) {
-        auth.header = null;
-        e.textContent = x.status === 401
-          ? "That username or Application Password was not accepted." : (x.message || "Sign in failed.");
-        e.hidden = false;
-      });
+      if (ev.target.id === "tkteam-form") save("publish");
     });
 
     host.addEventListener("click", function (ev) {

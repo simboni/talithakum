@@ -75,7 +75,7 @@ window.fetch = function (url, opts) {
   else if (u.indexOf("/users/me") > -1) body = { id: 4, name: "Sr. Comms", capabilities: { edit_posts: true, publish_posts: true } };
   else if (u.indexOf("/media") > -1) body = { source_url: "${PHOTO}uploaded.jpeg",
     media_details: { sizes: { medium_large: { source_url: "${PHOTO}uploaded-768x1024.jpeg" } } } };
-  else if (u.indexOf("/posts") > -1) body = window.__T;
+  else if (u.indexOf("/posts") > -1) body = location.search.indexOf("empty") > -1 ? [] : window.__T;
   return Promise.resolve(new Response(JSON.stringify(body), {
     status: 200, headers: { "Content-Type": "application/json" } }));
 };
@@ -190,6 +190,47 @@ async function newPage(deviceName) {
   await ctx.close();
 }
 
+/* ---- the built-in board ------------------------------------------------
+   With nothing published, the page must still look finished rather than
+   showing an empty state, and the panel must say where those names come
+   from so nobody thinks they are already in WordPress.                   */
+
+{
+  const { ctx, page } = await newPage();
+  await page.addInitScript(() => { window.tkpubNonce = "test-nonce-123"; });
+  await page.goto(base + "?empty=1", { waitUntil: "domcontentloaded" });
+  await page.waitForSelector(".tkteam-card", { timeout: 10000 });
+
+  const names = await page.locator(".tkteam-name").allTextContents();
+  check("the built-in board fills an empty page", names.length === 7, `${names.length} cards`);
+  check("the vice chair leads the built-in board", names[0] === "Sr. Joyce Nyagucha", names[0]);
+  check("the treasurer is second", names[1] === "Sr. Mary Gitau", names[1]);
+  check("no empty state is shown", (await page.locator(".tkteam-state").count()) === 0);
+
+  /* Her print has not arrived, so she must fall back to initials cleanly. */
+  const mary = await page.locator(".tkteam-card").nth(1).locator(".tkteam-mono").textContent();
+  check("somebody with no photograph gets their initials", mary === "MG", mary);
+
+  /* Built-in people are not posts: nothing may offer to delete them. */
+  await page.waitForTimeout(300);
+  await page.click("[data-toggle]");
+  await page.waitForTimeout(200);
+  check("the panel says the list is built in",
+    (await page.locator("#tkteam-form .tkteam-callout").textContent()).includes("built into it"));
+  await page.click('[data-tab="manage"]');
+  await page.waitForTimeout(300);
+  check("the built-in board is not offered for deletion",
+    (await page.locator(".tkteam-del").count()) === 0,
+    `${await page.locator(".tkteam-del").count()} delete buttons`);
+
+  /* And it steps aside the moment anything real is published. */
+  const withPosts = await page.evaluate(() => document.querySelectorAll(".tkteam-card").length);
+  check("built-in board renders as ordinary cards", withPosts === 7, `${withPosts}`);
+
+  await page.screenshot({ path: join(here, "shots", "team-seeded.png"), fullPage: true });
+  await ctx.close();
+}
+
 /* ---- portraits that do load --------------------------------------------
    Everything above runs with the photo host unreachable. This serves the
    real cropped portraits and measures what a visitor actually sees.      */
@@ -301,6 +342,10 @@ for (const [label, dev] of [["360x800", null], ["iPhone 14", "iPhone 14"]]) {
   await page.addInitScript(() => { window.tkpubNonce = "test-nonce-123"; });
   await page.goto(base, { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".tkteam-admin.is-visible", { timeout: 10000 });
+
+  check("published people replace the built-in board",
+    (await page.locator(".tkteam-name").count()) === 7 &&
+    (await page.locator(".tkteam-name").first().textContent()) === "Sr. Joyce Nyagucha");
 
   check("panel is drawn for a logged-in user",
     (await page.locator(".tkteam-abar h2").textContent()) === "Team panel");

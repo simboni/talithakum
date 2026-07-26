@@ -14,7 +14,18 @@ nothing else. A person is a name, a designation, a group and a photograph.
 5. Paste the whole of `elementor/team-page.html` and **Update**.
 6. Add it to the menu.
 
-Staff sign in exactly as they do on the other two pages. Nothing extra.
+Sign-in is the WordPress session and nothing else — no Application Password
+is asked for or stored. That needs `plugin/tkpub-nonce-snippet.php` installed;
+without it the panel says so and points at Posts → Add New instead.
+
+## The built-in board
+
+`CONFIG.seed` near the top of the script holds the seven board members, so the
+page is populated from the moment it is pasted. It is shown **only while
+nothing has been published** under the team category. Publish one real person
+in the panel and the built-in list disappears — so publish all of them, not
+some. Photo links resolve against `CONFIG.media`; a file that is not in the
+library yet simply shows the person's initials.
 
 ## Groups
 
@@ -86,7 +97,7 @@ library until it is deleted there.
 cd test && node team.mjs
 ```
 
-43 checks: sections, display order, monograms, the group filter, the
+52 checks: sections, the built-in board, display order, monograms, the group filter, the
 profile, deep links, portraits, the staff panel including a photo upload,
 and mobile layout at 360x800 and iPhone 14. Most of the run blocks the photo
 host, which also proves the page is complete without it.
