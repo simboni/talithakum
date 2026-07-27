@@ -3857,9 +3857,17 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
         var body = {
           title: data.title,
           excerpt: data.summary,
-          status: status,
-          date: data.date + "T09:00:00"
+          status: status
         };
+        /* WordPress schedules, rather than publishes, anything stamped in
+           the future — and a publication is usually dated ahead of the day
+           it is put up. Stamping the post with that date made it disappear
+           from the page while this panel reported success. Publishing now
+           leaves the stamp to WordPress; the date staff chose still shows
+           on the card, because it travels in the payload and that is what
+           the page reads. A draft keeps the chosen date: nothing depends
+           on it until it is published. */
+        if (status !== "publish") body.date = data.date + "T09:00:00";
         if (media.coverId) body.featured_media = media.coverId;
 
         if (CONFIG.mode === "cpt") {
@@ -3893,12 +3901,16 @@ body.tkpub-locked [class*="backtotop"] { display: none !important; }
           body: JSON.stringify(body)
         });
       })
-      .then(function () {
+      .then(function (saved) {
         progress(1, "Done");
         hideProgress();
-        toast(status === "publish"
-          ? "Published. It is live on this page now."
-          : "Draft saved. Only signed-in staff can see it.", "ok");
+        /* Report what WordPress actually did, not what was asked for. */
+        var real = (saved && saved.status) || status;
+        toast(real === "publish" ? "Published. It is live on this page now."
+          : real === "future" ? "Scheduled by WordPress, so it is not on the page yet. "
+            + "Open it in Posts and publish it immediately."
+          : "Draft saved. Only signed-in staff can see it.",
+          real === "future" ? "err" : "ok");
         resetForm();
         return TK.reload();
       })

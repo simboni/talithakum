@@ -640,17 +640,25 @@
         title: d.title,
         excerpt: d.summary,
         status: status,
-        date: d.date + "T09:00:00",
         categories: [state.parentId, r[0]].filter(Boolean),
         tags: r[1].filter(Boolean),
         content: "<!--TKVID:" + JSON.stringify(payload) + "-->\n<p>" + esc(d.summary) + "</p>\n" +
           '<p><a href="' + esc(v.watch) + '" target="_blank" rel="noopener">Watch the video</a></p>'
       };
+      /* WordPress schedules anything stamped in the future rather than
+         publishing it, which would take the video off the page while this
+         panel reported success. The date staff chose still shows on the
+         card — it travels in the payload, and that is what the page reads. */
+      if (status !== "publish") body.date = d.date + "T09:00:00";
       return api("wp/v2/posts", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
       });
-    }).then(function () {
-      toast(status === "publish" ? "Published. It is on the page now." : "Draft saved.", "ok");
+    }).then(function (saved) {
+      var real = (saved && saved.status) || status;
+      toast(real === "publish" ? "Published. It is on the page now."
+        : real === "future" ? "Scheduled by WordPress, so it is not on the page yet. "
+          + "Open it in Posts and publish it immediately."
+        : "Draft saved.", real === "future" ? "err" : "ok");
       $("#tkvid-form").reset();
       $("#tkvid-prev").innerHTML = "";
       $("#tkvid-d").value = new Date().toISOString().slice(0, 10);

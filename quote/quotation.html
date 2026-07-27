@@ -1,0 +1,217 @@
+<title>Quotation — Publications, Videos and Team pages</title>
+<style>
+  :root {
+    --ink:        #1c1a18;
+    --ink-2:      #4a4440;
+    --ink-3:      #7d746d;
+    --rule:       #e2ddd7;
+    --rule-2:     #f1ede8;
+    --ground:     #ffffff;
+    --accent:     #d1400f;
+    --accent-ink: #a83309;
+    --accent-wash:#fbeee8;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #f2ede7; --ink-2: #c3bab1; --ink-3: #8e847b;
+      --rule: #35302b; --rule-2: #262220; --ground: #16140f;
+      --accent: #f2703c; --accent-ink: #f9a077; --accent-wash: #2a1b13;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #f2ede7; --ink-2: #c3bab1; --ink-3: #8e847b;
+    --rule: #35302b; --rule-2: #262220; --ground: #16140f;
+    --accent: #f2703c; --accent-ink: #f9a077; --accent-wash: #2a1b13;
+  }
+  :root[data-theme="light"] {
+    --ink: #1c1a18; --ink-2: #4a4440; --ink-3: #7d746d;
+    --rule: #e2ddd7; --rule-2: #f1ede8; --ground: #ffffff;
+    --accent: #d1400f; --accent-ink: #a83309; --accent-wash: #fbeee8;
+  }
+
+  body {
+    margin: 0;
+    background: var(--rule-2);
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--ground);
+    padding: 56px 56px 44px;
+    border-left: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 600; color: var(--ink);
+    font-size: 2rem; line-height: 1.1; letter-spacing: -0.015em; margin: 0;
+  }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 28px; flex-wrap: wrap;
+    padding-bottom: 20px; border-bottom: 2px solid var(--accent);
+  }
+  .ref { text-align: right; font-size: 0.8125rem; color: var(--ink-3); }
+  .ref b { display: block; font-family: var(--serif); font-size: 1.0625rem; color: var(--ink); font-weight: 600; }
+
+  .parties {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 26px; margin: 26px 0 34px;
+  }
+  .parties h2 {
+    font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 6px;
+  }
+  .parties p { margin: 0; font-size: 0.8125rem; line-height: 1.7; }
+  .parties strong { color: var(--ink); font-size: 0.9375rem; }
+  .fill { color: var(--ink-3); border-bottom: 1px dotted var(--rule); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--ink-3);
+    border-bottom: 1px solid var(--rule); padding: 0 0 9px;
+  }
+  th.num, td.num { text-align: right; }
+  td {
+    padding: 15px 0; border-bottom: 1px solid var(--rule-2); vertical-align: top;
+  }
+  td strong { display: block; font-family: var(--serif); font-size: 1.0625rem;
+    font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  td span { font-size: 0.8125rem; color: var(--ink-3); }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink); }
+
+  /* Work under way, shown for completeness but not billed on this quotation. */
+  .wip strong { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .chip {
+    font-family: var(--sans); font-size: 0.625rem; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--accent-ink); background: var(--accent-wash);
+    padding: 3px 8px; border-radius: 2px;
+  }
+
+  .total td {
+    border-bottom: 0; border-top: 2px solid var(--accent);
+    padding-top: 18px; font-family: var(--serif); color: var(--ink);
+  }
+  .total .label { font-size: 1.0625rem; font-weight: 600; }
+  .total .num { font-size: 1.75rem; letter-spacing: -0.02em; }
+
+  .note {
+    margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--rule);
+    font-size: 0.8125rem;
+  }
+  .note p { margin: 0 0 6px; }
+  .note b { color: var(--ink); }
+
+  .sign {
+    margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+  }
+  .sign div { border-top: 1px solid var(--rule); padding-top: 8px;
+    font-size: 0.8125rem; color: var(--ink-3); }
+
+  @media (max-width: 640px) {
+    .sheet { padding: 30px 20px; border-left: 0; border-right: 0; }
+    .ref { text-align: left; }
+    .sign { grid-template-columns: 1fr; gap: 26px; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .sheet { border: 0; padding: 0; max-width: none; }
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="head">
+    <h1>Quotation</h1>
+    <div class="ref">
+      <b>QT-2026-07</b>
+      26 July 2026<br>
+      Valid 30 days
+    </div>
+  </header>
+
+  <section class="parties">
+    <div>
+      <h2>Billed to</h2>
+      <p><strong>Talitha Kum Kenya</strong><br>
+        talithakumraht.org</p>
+    </div>
+  </section>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Work</th>
+        <th class="num">KES</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <strong>Publications page</strong>
+          <span>Filterable library, PDF reader built into the page for phones,
+            and a staff panel for uploading and publishing documents.</span>
+        </td>
+        <td class="num">9,000</td>
+      </tr>
+      <tr>
+        <td>
+          <strong>Videos page</strong>
+          <span>Categorised video library that plays on the site, with a staff
+            panel for adding videos by link.</span>
+        </td>
+        <td class="num">4,200</td>
+      </tr>
+      <tr>
+        <td>
+          <strong>Team page</strong>
+          <span>Board and staff sections with portraits, a staff panel for
+            adding people, and the supplied board photographs prepared for
+            the web.</span>
+        </td>
+        <td class="num">4,800</td>
+      </tr>
+      <tr class="wip">
+        <td>
+          <strong>Homepage revamp <span class="chip">In progress</span></strong>
+          <span>Redesign of the homepage. Under way — to be handed over
+            separately.</span>
+        </td>
+        <td class="num">2,500</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="num">20,500</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p><b>Included:</b> installation on the site, staff guides, and the source
+      code.</p>
+    <p><b>Payment:</b> due on acceptance.
+      <span class="fill">M-Pesa / bank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></p>
+  </div>
+
+  <div class="sign">
+    <div>Prepared by — name, signature, date</div>
+    <div>Accepted for Talitha Kum Kenya — name, signature, date</div>
+  </div>
+
+</div>

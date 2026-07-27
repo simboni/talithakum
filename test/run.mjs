@@ -301,6 +301,49 @@ check("X-WP-Nonce sent on authenticated calls", nonceCalls > 0, `${nonceCalls} c
 const authHeaderCalls = await nonced.evaluate(() =>
   (window.__TKPUB_HEADERS__ || []).filter((c) => c.headers && c.headers.Authorization).length);
 check("no Basic auth header sent in cookie mode", authHeaderCalls === 0, `${authHeaderCalls} sent`);
+
+/* ---- publishing a future-dated publication ----------------------------
+   WordPress schedules rather than publishes anything stamped ahead of now,
+   which took the publication straight off the page while the panel said it
+   had gone live. Publishing must therefore leave the stamp to WordPress —
+   the date staff choose is carried in the payload and read from there.   */
+
+/* The upload goes over XHR for its progress bar, so the page's own fetch
+   stub never sees it — intercept at the network layer instead. */
+await nonced.route(/\/wp-json\/wp\/v2\/media/, (r) => r.fulfill({
+  status: 201, contentType: "application/json",
+  body: JSON.stringify({
+    id: 900, source_url: "https://talithakumraht.org/wp-content/uploads/report.pdf",
+    media_details: { filesize: 12345 },
+  }),
+}));
+
+await nonced.fill("#tkpub-f-title", "Annual Report 2027");
+await nonced.fill("#tkpub-f-summary", "A report dated well ahead of today.");
+await nonced.selectOption("#tkpub-f-type", { index: 1 });
+await nonced.fill("#tkpub-f-date", "2027-12-01");
+await nonced.locator("#tkpub-f-themes label").first().click();
+await nonced.setInputFiles("#tkpub-pdf-input", {
+  name: "report.pdf", mimeType: "application/pdf",
+  buffer: Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>"),
+});
+await nonced.waitForTimeout(600);
+await nonced.click('#tkpub-form [data-save="publish"]');
+await nonced.waitForTimeout(900);
+
+const posted = await nonced.evaluate(() =>
+  (window.__TKPUB_HEADERS__ || [])
+    .filter((c) => c.method === "POST" && /\/posts$/.test(c.url.split("?")[0]))
+    .pop());
+check("a complete form posts the publication", !!posted, "nothing was posted");
+
+const sent = posted ? JSON.parse(posted.body || "{}") : {};
+check("publishing asks for publish status", sent.status === "publish", String(sent.status));
+check("publishing does not stamp a future date", !("date" in sent),
+  "date sent as " + sent.date);
+check("the chosen date still travels in the payload",
+  typeof sent.content === "string" && sent.content.indexOf('"date":"2027-12-01"') > -1,
+  (sent.content || "").slice(0, 120));
 check("toggle label follows the panel",
   (await nonced.locator("[data-toggle]").innerText()).trim().toLowerCase() === "close panel",
   await nonced.locator("[data-toggle]").innerText());

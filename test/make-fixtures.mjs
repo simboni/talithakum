@@ -179,7 +179,11 @@ window.__TKPUB_FIXTURE__ = ${JSON.stringify(posts)};
 
   window.fetch = function (url, opts) {
     var u = String(url);
-    window.__TKPUB_HEADERS__.push({ url: u, headers: (opts && opts.headers) || {} });
+    window.__TKPUB_HEADERS__.push({
+      url: u, method: (opts && opts.method) || "GET",
+      headers: (opts && opts.headers) || {},
+      body: (opts && typeof opts.body === "string") ? opts.body : ""
+    });
 
     function reply(body, headers, status) {
       return Promise.resolve(new Response(JSON.stringify(body), {
