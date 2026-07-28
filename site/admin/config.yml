@@ -3,9 +3,11 @@
 # site/static/uploads/. Every publish commits to the repository and Netlify
 # rebuilds the site, so a change is live in about a minute.
 
+# The branch below must be the branch Netlify deploys (the repository's
+# default). If the repo is ever renamed to use a main branch, update it here.
 backend:
   name: git-gateway
-  branch: main
+  branch: claude/talithakum-repo-sug8lg
 
 media_folder: "site/static/uploads"
 public_folder: "/uploads"
