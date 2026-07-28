@@ -196,7 +196,24 @@ for (const r of ROUTES) {
   const tabs = await page.locator(".tks-cattabs a").count();
   check("news page shows the five category tabs", tabs === 5, `${tabs} tabs`);
   const tags = await page.locator(".tks-ncard .tks-ntag").count();
-  check("news cards carry their category tag", tags === 16, `${tags} tags`);
+  check("news cards carry their category tag", tags === 9, `${tags} tags`);
+  check("news page one shows nine stories with a pager",
+    (await page.locator(".tks-ncard").count()) === 9 &&
+    (await page.locator(".tks-pgn").count()) === 1);
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/news/2/");
+  const n = await page.locator(".tks-ncard").count();
+  check("news page two holds the remaining stories", n === 7, `${n} cards`);
+  check("news pager highlights the current page",
+    (await page.locator(".tks-pgn .is-here").textContent()) === "2");
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/category/prevention/2/");
+  const n = await page.locator(".tks-ncard").count();
+  check("category pages paginate too", n === 1, `${n} cards`);
   await ctx.close();
 }
 

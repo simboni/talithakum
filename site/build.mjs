@@ -396,7 +396,7 @@ function newsCard(n) {
     </span></a>`;
 }
 
-function listPage({ kicker, h1, lede, items, empty, nav = "" }) {
+function listPage({ kicker, h1, lede, items, empty, nav = "", pager = "" }) {
   return `<section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">${esc(kicker)}</span><h1>${esc(h1)}</h1><p>${esc(lede)}</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
@@ -405,24 +405,62 @@ function listPage({ kicker, h1, lede, items, empty, nav = "" }) {
       : `<div style="text-align:center;border:1px dashed var(--s-line);border-radius:10px;padding:48px 22px">
            <h3 style="font-size:18px">${esc(empty)}</h3>
            <p style="color:var(--s-muted);margin-top:6px">New stories are added from the admin panel and appear here.</p></div>`}
+    ${pager}
   </div></section>`;
 }
 
-await page("/news/", shell({
-  title: "News — Talitha Kum Kenya",
-  desc: "Stories and updates from across the network.",
-  canonical: "/news/",
-  body: listPage({ kicker: "News", h1: "Latest from the network", lede: "Stories and updates from the field.", items: news, empty: "No stories yet", nav: catTabs("") }),
-}));
+/* Stories are paginated nine to a page (three rows of the grid), with the
+   same pager the gallery uses. Story slugs are never bare numbers, so the
+   numeric page routes cannot collide with /news/<slug>/. */
+const NEWS_PER_PAGE = 9;
+
+function chunkPages(items, per) {
+  const pages = [];
+  for (let i = 0; i < items.length; i += per) pages.push(items.slice(i, i + per));
+  if (!pages.length) pages.push([]);
+  return pages;
+}
+
+function listPager(routeOf, n, total, label) {
+  if (total < 2) return "";
+  return `<nav class="tks-pgn" aria-label="${esc(label)}">
+    ${n > 1 ? `<a class="tks-pgn-step" href="${routeOf(n - 1)}" rel="prev">&larr; Newer</a>` : ""}
+    ${Array.from({ length: total }, (_, i) => i + 1 === n
+      ? `<span class="is-here" aria-current="page">${i + 1}</span>`
+      : `<a href="${routeOf(i + 1)}">${i + 1}</a>`).join("")}
+    ${n < total ? `<a class="tks-pgn-step" href="${routeOf(n + 1)}" rel="next">Older &rarr;</a>` : ""}
+  </nav>`;
+}
+
+{
+  const pages = chunkPages(news, NEWS_PER_PAGE);
+  const routeOf = (i) => (i === 1 ? "/news/" : `/news/${i}/`);
+  for (let n = 1; n <= pages.length; n++) {
+    await page(routeOf(n), shell({
+      title: `News${n > 1 ? ` — page ${n}` : ""} — Talitha Kum Kenya`,
+      desc: "Stories and updates from across the network.",
+      canonical: routeOf(n),
+      body: listPage({ kicker: "News", h1: "Latest from the network", lede: "Stories and updates from the field.",
+        items: pages[n - 1], empty: "No stories yet", nav: catTabs(""),
+        pager: listPager(routeOf, n, pages.length, "News pages") }),
+    }));
+  }
+}
 
 for (const [slug, name] of Object.entries(CATS)) {
   const items = news.filter((n) => (n.category || "") === name || (n.category || "") === slug);
-  await page(`/category/${slug}/`, shell({
-    title: `${name} — Talitha Kum Kenya`,
-    desc: `Our work in ${name.toLowerCase()}.`,
-    canonical: `/category/${slug}/`,
-    body: listPage({ kicker: "Our work", h1: name, lede: `Stories from our ${name.toLowerCase()} work.`, items, empty: `No ${name.toLowerCase()} stories yet`, nav: catTabs(slug) }),
-  }));
+  const pages = chunkPages(items, NEWS_PER_PAGE);
+  const routeOf = (i) => (i === 1 ? `/category/${slug}/` : `/category/${slug}/${i}/`);
+  for (let n = 1; n <= pages.length; n++) {
+    await page(routeOf(n), shell({
+      title: `${name}${n > 1 ? ` — page ${n}` : ""} — Talitha Kum Kenya`,
+      desc: `Our work in ${name.toLowerCase()}.`,
+      canonical: routeOf(n),
+      body: listPage({ kicker: "Our work", h1: name, lede: `Stories from our ${name.toLowerCase()} work.`,
+        items: pages[n - 1], empty: `No ${name.toLowerCase()} stories yet`, nav: catTabs(slug),
+        pager: listPager(routeOf, n, pages.length, `${name} pages`) }),
+    }));
+  }
 }
 
 for (const n of news) {
