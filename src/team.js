@@ -53,6 +53,8 @@
        is never broken by a missing file. */
     media: "https://talithakumraht.org/wp-content/uploads/2026/07/",
     seed: [
+      { name: "Sr. Mercy Mwayi", role: "Executive Director", order: 5,
+        photo: "sr-mercy-mwayi-director.jpg" },
       { name: "Sr. Joyce Nyagucha", role: "Board Vice Chair", order: 20,
         photo: "sr-joyce-nyagucha-board-vice-chair.jpg" },
       { name: "Sr. Mary Gitau", role: "Board Treasurer", order: 30,
@@ -66,9 +68,7 @@
       { name: "Bro. Bernard Juma", role: "Board Member", order: 50,
         photo: "bro-bernard-juma-board-member.jpg" },
       { name: "Bildad Keke", role: "Board Member", order: 50,
-        photo: "bildadrd-keke-board-member.jpg" },
-      { name: "Sr. Mercy Mwayi", role: "Director", group: "Staff", order: 10,
-        photo: "sr-mercy-mwayi-director.jpg" }
+        photo: "bildadrd-keke-board-member.jpg" }
     ]
   };
 

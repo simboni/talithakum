@@ -144,7 +144,7 @@ for (const r of ROUTES) {
   const cards = await page.locator(".tkteam-card").count();
   check("team loads from the static API", cards === 8, `${cards} cards`);
   const first = await page.locator(".tkteam-role").first().textContent();
-  check("display order holds on the static site", first === "Board Vice Chair", first);
+  check("display order holds on the static site", first === "Executive Director", first);
   await ctx.close();
 }
 
