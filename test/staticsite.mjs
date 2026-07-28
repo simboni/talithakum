@@ -181,6 +181,13 @@ for (const r of ROUTES) {
   check("a story page renders its body",
     (await page.locator(".tks-prose p").count()) >= 1 &&
     (await page.locator("h1").textContent()).includes("Training of trainers"));
+  const og = await page.locator('meta[property="og:image"]').getAttribute("content");
+  check("stories share with their own absolute og:image",
+    /^https:\/\/talithakumraht\.org\/uploads\/.+/.test(og || ""), og);
+  check("stories carry article type and twitter card",
+    (await page.locator('meta[property="og:type"]').getAttribute("content")) === "article" &&
+    (await page.locator('meta[name="twitter:card"]').getAttribute("content")) === "summary_large_image" &&
+    (await page.locator('meta[property="og:url"]').getAttribute("content")) === "https://talithakumraht.org/news/training-of-trainers-with-border-police/");
   await ctx.close();
 }
 {

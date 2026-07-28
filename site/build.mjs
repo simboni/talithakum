@@ -119,7 +119,12 @@ const chromeHead = retarget(await S("chrome-head.html"));
 const chromeFoot = retarget(await S("chrome-foot.html"));
 const safe = (s) => s.replace(/<\/script>/gi, "<\\/script>");
 
-function shell({ title, desc, body, extraCss = "", extraJs = "", canonical = "" }) {
+const ORIGIN = "https://talithakumraht.org";
+
+function shell({ title, desc, body, extraCss = "", extraJs = "", canonical = "",
+                 image = "/uploads/hero-network.jpg", ogType = "website", published = "" }) {
+  /* scrapers (WhatsApp, Facebook, X, Slack…) need absolute image URLs */
+  const absImage = /^https?:/.test(image) ? image : ORIGIN + image;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -127,15 +132,23 @@ function shell({ title, desc, body, extraCss = "", extraJs = "", canonical = "" 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-${canonical ? `<link rel="canonical" href="https://talithakumraht.org${canonical}">` : ""}
+${canonical ? `<link rel="canonical" href="${ORIGIN}${canonical}">` : ""}
 <link rel="icon" href="/uploads/tik-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Nunito+Sans:ital,wght@0,400..900;1,400..900&display=swap">
 <meta name="theme-color" content="#221a14">
+<meta property="og:site_name" content="Talitha Kum Kenya">
+<meta property="og:type" content="${ogType}">
+${canonical ? `<meta property="og:url" content="${ORIGIN}${canonical}">` : ""}
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="/uploads/hero-network.jpg">
+<meta property="og:image" content="${esc(absImage)}">
+${published ? `<meta property="article:published_time" content="${esc(published)}">` : ""}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${esc(absImage)}">
 <style>
 /* Cross-document view transitions: page changes cross-fade in browsers
    that support it, and are ordinary navigations everywhere else. */
@@ -468,6 +481,9 @@ for (const n of news) {
     title: `${n.title} — Talitha Kum Kenya`,
     desc: n.summary || n.title,
     canonical: `/news/${n.slug}/`,
+    ogType: "article",
+    published: n.date,
+    ...(n.image ? { image: n.image } : {}),
     body: `<section class="tks-pagehead">${n.image ? `<div class="tks-hbg" style="background-image:url('${esc(n.image)}')"></div>` : ""}
       <div class="tks-wrap"><span class="tks-kicker">${esc(n.category || "News")}</span>
       <h1>${esc(n.title)}</h1>
@@ -527,6 +543,7 @@ const galleryRoutes = [];
       title: `Gallery${n > 1 ? ` — page ${n}` : ""} — Talitha Kum Kenya`,
       desc: "Photographs from across the network.",
       canonical: routeOf(n),
+      ...(pages[n - 1][0] ? { image: pages[n - 1][0].image } : {}),
       body: `<section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/outreach.jpg')"></div>
         <div class="tks-wrap"><span class="tks-kicker">Gallery</span><h1>Photographs from across the network</h1>
         <p>Workshops, trainings, commissioning days and the people who make the work happen.</p></div></section>
