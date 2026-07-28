@@ -107,9 +107,9 @@
   background: var(--s-deep); color: rgba(255,255,255,.85); font-size: 13px;
 }
 .tks-top .tks-wrap {
-  display: flex; align-items: center; gap: 18px; min-height: 40px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 0 18px; min-height: 42px; flex-wrap: wrap;
 }
-.tks-top a { display: inline-flex; align-items: center; gap: 7px; padding: 4px 0; }
+.tks-top a { display: inline-flex; align-items: center; gap: 7px; padding: 4px 0; min-height: 40px; }
 .tks-top a:hover { color: #fff; }
 .tks-top svg { width: 14px; height: 14px; color: var(--s-gold); }
 .tks-top .is-help { margin-left: auto; font-weight: 700; color: var(--s-gold); }
@@ -131,10 +131,10 @@
 .tks-logo > span { min-width: 0; }
 .tks-logo img { width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; }
 .tks-logo b {
-  font-family: var(--s-head); font-size: 19px; line-height: 1.1; color: var(--s-deep);
-  display: block;
+  font-family: var(--s-head); font-size: 19px; line-height: 1.2; color: var(--s-deep);
+  display: block; margin-bottom: 2px;
 }
-.tks-logo small { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--s-muted); }
+.tks-logo small { display: block; font-size: 11px; line-height: 1.35; letter-spacing: .08em; text-transform: uppercase; color: var(--s-muted); }
 
 .tks-nav { display: flex; align-items: center; gap: 2px; margin-left: auto; }
 .tks-nav > li { position: relative; }
@@ -209,10 +209,15 @@
   padding: 18px 18px 28px; overflow-y: auto;
   box-shadow: -20px 0 60px rgba(0,0,0,.25);
 }
+.tks-drawer { line-height: 1.5; }
+.tks-drawer .tks-panel { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 .tks-drawer .tks-dh {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 14px; margin-bottom: 6px; border-bottom: 2px solid var(--s-accent);
 }
-.tks-drawer .tks-dh b { font-family: var(--s-head); font-size: 17px; color: var(--s-deep); }
+.tks-dlogo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tks-dlogo img { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; }
+.tks-drawer .tks-dh b { font-family: var(--s-head); font-size: 16px; color: var(--s-deep); }
 .tks-x {
   width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--s-line);
   display: grid; place-items: center;
@@ -221,16 +226,20 @@
 .tks-dnav > li { border-bottom: 1px solid var(--s-line-soft); }
 .tks-dnav > li > a, .tks-dnav .tks-dgroup {
   display: flex; align-items: center; justify-content: space-between; width: 100%;
-  font-family: var(--s-head); font-size: 16px; font-weight: 700; color: var(--s-deep);
-  padding: 15px 4px; min-height: 52px; text-align: left;
+  font-family: var(--s-head); font-size: 15.5px; font-weight: 700; color: var(--s-deep);
+  padding: 13px 4px; min-height: 50px; text-align: left;
 }
+.tks-dnav .tks-dgroup[aria-expanded="true"] { color: var(--s-accent); }
 .tks-dnav .tks-caret { width: 14px; height: 14px; transition: transform .18s; }
 .tks-dnav [aria-expanded="true"] .tks-caret { transform: rotate(180deg); }
-.tks-dnav .tks-dsub { display: none; padding: 0 4px 12px; }
+.tks-dnav .tks-dsub {
+  display: none; margin: 0 0 12px 6px; padding-left: 12px;
+  border-left: 2px solid var(--s-line);
+}
 .tks-dnav [aria-expanded="true"] + .tks-dsub { display: block; }
 .tks-dnav .tks-dsub a {
-  display: block; padding: 10px 12px; border-radius: 8px;
-  font-size: 15px; color: var(--s-body); min-height: 44px;
+  display: flex; align-items: center; padding: 0 10px; border-radius: 8px;
+  font-size: 14.5px; font-weight: 600; color: var(--s-body); min-height: 44px;
 }
 .tks-dnav .tks-dsub a:hover { background: var(--s-canvas); color: var(--s-accent); }
 .tks-drawer .tks-btn { width: 100%; margin-top: 18px; }
@@ -265,7 +274,10 @@ body.tks-locked { overflow: hidden; }
   border-top: 1px solid rgba(255,255,255,.12);
   padding: 20px 0; font-size: 13px;
 }
-.tks-legal .tks-wrap { display: flex; gap: 18px; flex-wrap: wrap; justify-content: space-between; }
+.tks-legal .tks-wrap {
+  display: flex; gap: 0 18px; flex-wrap: wrap; justify-content: space-between; align-items: center;
+}
+.tks-legal a { display: inline-flex; align-items: center; min-height: 40px; }
 .tks-legal a:hover { color: var(--s-gold); }
 
 /* ==========================================================================
@@ -535,6 +547,11 @@ body.tks-locked { overflow: hidden; }
 
 @media (max-width: 760px) {
   .tks-sec { padding: 54px 0; }
+  /* Three stacked rows of contact details push the page down before the
+     logo appears; the address is the one a phone user needs least. */
+  .tks-top .is-addr { display: none; }
+  .tks-foot .tks-fgrid { grid-template-columns: 1fr; gap: 30px; padding: 48px 0 36px; }
+  .tks-legal .tks-wrap { justify-content: center; text-align: center; }
   .tks-hero .tks-wrap { padding-top: 72px; padding-bottom: 66px; }
   .tks-story { grid-template-columns: 1fr; gap: 34px; }
   .tks-story .tks-syear { left: 12px; bottom: -14px; }
