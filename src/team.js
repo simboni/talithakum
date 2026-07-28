@@ -55,6 +55,8 @@
     seed: [
       { name: "Sr. Mercy Mwayi", role: "Executive Director", order: 5,
         photo: "sr-mercy-mwayi-director.jpg" },
+      { name: "Fr. Joseph Kamau Juma", role: "Board Chair", order: 10,
+        photo: "fr-joseph-kamau-juma-board-chair.jpg" },
       { name: "Sr. Joyce Nyagucha", role: "Board Vice Chair", order: 20,
         photo: "sr-joyce-nyagucha-board-vice-chair.jpg" },
       { name: "Sr. Mary Gitau", role: "Board Treasurer", order: 30,
