@@ -118,8 +118,8 @@ for (const name of PAGES) {
 
   await page.locator(".tks-impact").scrollIntoViewIfNeeded();
   await page.waitForTimeout(1700);
-  const big = await page.locator('[data-count="18896"]').textContent();
-  check("impact counters count up to the real numbers", big.replace(/\D/g, "") === "18896", big);
+  const big = await page.locator('[data-count="121000"]').textContent();
+  check("impact counters count up to the real numbers", big.replace(/\D/g, "") === "121000", big);
 
   check("the four Ps are all on the page", (await page.locator(".tks-p").count()) === 4);
   check("partners marquee is doubled for the loop",
