@@ -16,3 +16,8 @@
   for = "/api/*"
   [headers.values]
     Cache-Control = "public, max-age=60"
+
+# The admin API — one serverless function behind /api/admin/*.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

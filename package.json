@@ -1,0 +1,9 @@
+{
+  "name": "talithakum-site",
+  "private": true,
+  "type": "module",
+  "description": "Talitha Kum Kenya — static site, admin panel and serverless admin API",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

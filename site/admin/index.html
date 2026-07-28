@@ -1,16 +1,639 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin — Talitha Kum Kenya</title>
-  <link rel="icon" href="/uploads/tik-logo.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Talitha Kum Kenya</title>
+<link rel="icon" href="/uploads/tik-logo.png">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+<style>
+  :root {
+    --ink: #2a1c12; --deep: #241811; --paper: #faf6f0; --card: #fffdfa;
+    --line: #e9ddcd; --muted: #8a7a67; --accent: #c23a08; --gold: #f5a800;
+    --gold-soft: #fdf3dc; --ok: #2e7d32; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 15px/1.6 "Nunito Sans", system-ui, sans-serif; background: var(--paper); color: var(--ink); }
+  h1, h2, h3 { font-family: Fraunces, serif; font-weight: 600; line-height: 1.15; }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--accent); text-decoration: none; }
+
+  /* ---- auth screens ---- */
+  .auth { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+  .auth-card { width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 34px 30px; box-shadow: 0 24px 60px rgba(60,35,10,.08); }
+  .auth-card img { width: 54px; height: 54px; }
+  .auth-card h1 { font-size: 26px; margin: 14px 0 4px; }
+  .auth-card p.sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+  /* ---- shell ---- */
+  .shell { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+  .side { background: var(--deep); color: #efe5d8; padding: 22px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; overflow: auto; }
+  .side .brand { display: flex; gap: 11px; align-items: center; padding: 6px 10px 18px; }
+  .side .brand img { width: 40px; height: 40px; border-radius: 50%; background: #fff; }
+  .side .brand b { font-family: Fraunces, serif; font-size: 17px; font-weight: 600; line-height: 1.2; }
+  .side .brand span { display: block; font-size: 10.5px; letter-spacing: .12em; color: #b9a891; text-transform: uppercase; }
+  .nav-label { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: #9c8a74; padding: 14px 10px 6px; }
+  .nitem { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; background: none; border: 0; color: #e8dccb; padding: 10px; border-radius: 9px; font-weight: 700; font-size: 14px; }
+  .nitem svg { width: 17px; height: 17px; flex: none; opacity: .75; }
+  .nitem:hover { background: rgba(255,255,255,.07); }
+  .nitem.on { background: var(--accent); color: #fff; }
+  .side .foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.12); padding-top: 12px; }
+  .side .who { padding: 4px 10px 10px; font-size: 13px; }
+  .side .who b { display: block; }
+  .side .who span { color: #b9a891; font-size: 11.5px; }
+
+  .main { padding: 34px clamp(18px, 4vw, 48px); max-width: 1060px; }
+  .crumbs { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 800; }
+  .head { display: flex; align-items: end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin: 6px 0 26px; }
+  .head h1 { font-size: clamp(26px, 3.4vw, 34px); }
+
+  /* ---- buttons / inputs ---- */
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 11px 20px; font-weight: 800; font-size: 13.5px; background: var(--accent); color: #fff; transition: .2s; }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.danger { background: transparent; color: #b3261e; border: 1px solid #e7c4c0; }
+  .btn.small { padding: 7px 14px; font-size: 12.5px; }
+  .btn[disabled] { opacity: .55; pointer-events: none; }
+  label.f { display: block; margin-bottom: 16px; }
+  label.f > span, .f-label { display: block; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .in, textarea.in, select.in { width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px; outline: none; }
+  .in:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+  textarea.in { min-height: 90px; resize: vertical; }
+  textarea.in.tall { min-height: 260px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+  .err { background: #fdecea; color: #b3261e; border-radius: 9px; padding: 10px 13px; font-size: 13.5px; margin-bottom: 14px; display: none; }
+  .err.show { display: block; }
+
+  /* ---- lists ---- */
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .row:hover { border-color: var(--gold); transform: translateX(3px); }
+  .row .thumb { width: 56px; height: 42px; border-radius: 7px; object-fit: cover; background: var(--gold-soft); flex: none; }
+  .row .mono { width: 56px; height: 42px; border-radius: 7px; background: var(--gold-soft); color: var(--accent); display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; }
+  .row b { font-size: 15.5px; }
+  .row .meta { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .row .tag { margin-left: auto; flex: none; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: var(--gold-soft); color: #7a5b00; border-radius: 999px; padding: 4px 11px; }
+  .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: 44px 20px; text-align: center; color: var(--muted); }
+
+  /* ---- editor form ---- */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 26px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+  .grid2 > .span2 { grid-column: 1 / -1; }
+  .imgpick { display: flex; align-items: center; gap: 14px; }
+  .imgpick img { width: 92px; height: 68px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--gold-soft); }
+  .imgpick .ph { width: 92px; height: 68px; border-radius: 8px; border: 1px dashed var(--line); display: grid; place-items: center; color: var(--muted); font-size: 11px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips label { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .chips label:has(input:checked) { background: var(--gold-soft); border-color: var(--gold); }
+  .chips input { accent-color: var(--accent); }
+  .bar { display: flex; gap: 10px; align-items: center; margin-top: 22px; flex-wrap: wrap; }
+  .bar .grow { flex: 1; }
+
+  /* ---- gallery manager ---- */
+  .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .gitem { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .gitem img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .gitem .gbody { padding: 10px; }
+  .gitem input { width: 100%; border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; font-size: 13px; }
+  .gitem .gops { display: flex; gap: 6px; margin-top: 8px; }
+  .gitem .gops button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 5px 0; font-size: 12px; font-weight: 700; }
+  .gitem .gops button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- users ---- */
+  .role { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; padding: 4px 11px; }
+  .role.admin { background: var(--accent); color: #fff; }
+  .role.editor { background: var(--gold-soft); color: #7a5b00; }
+  .seclist { color: var(--muted); font-size: 12px; }
+
+  /* ---- toast ---- */
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(90px); background: var(--deep); color: #fff; border-radius: 999px; padding: 13px 24px; font-weight: 700; font-size: 14px; box-shadow: 0 18px 40px rgba(0,0,0,.25); transition: transform .3s; z-index: 60; max-width: 92vw; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok::before { content: "✓  "; color: var(--gold); }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .side .brand { padding-bottom: 6px; }
+    .nav-label { display: none; }
+    .nitem { width: auto; padding: 8px 12px; }
+    .side .foot { margin: 0 0 0 auto; border: 0; padding: 0; display: flex; align-items: center; gap: 4px; }
+    .side .who { display: none; }
+    .grid2 { grid-template-columns: 1fr; }
+    .main { padding: 22px 16px; }
+  }
+</style>
 </head>
 <body>
-  <!-- Sveltia CMS: a modern drop-in replacement for Decap CMS. It reads the
-       same config.yml, signs editors in with GitHub through Netlify's OAuth
-       broker, and writes the JSON files in site/content/ — every save
-       triggers a rebuild and deploy of the site. -->
-  <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js" type="module"></script>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, el) { return (el || document).querySelector(s); };
+  var app = $("#app");
+  var me = null;
+
+  /* ------------------------------------------------------------------ api */
+
+  function api(path, opts) {
+    opts = opts || {};
+    return fetch("/api/admin/" + path, {
+      method: opts.method || "GET",
+      headers: { "content-type": "application/json" },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      credentials: "same-origin",
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) throw new Error(d.error || ("Request failed (" + r.status + ")"));
+        return d;
+      });
+    });
+  }
+
+  function toast(msg, ok) {
+    var t = $("#toast");
+    t.textContent = msg;
+    t.className = "toast show" + (ok ? " ok" : "");
+    clearTimeout(t._h);
+    t._h = setTimeout(function () { t.className = "toast"; }, 3600);
+  }
+
+  var esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  };
+  var slugify = function (s) {
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "item";
+  };
+
+  /* --------------------------------------------------------------- schema */
+
+  var THEMES = ["Prevention", "Protection", "Partnership", "Prayer", "Child Trafficking", "Labour Exploitation", "Safe Migration", "Survivor Care", "Digital Safety", "Youth & Schools", "Advocacy", "Faith Formation"];
+
+  var SECTIONS = {
+    news: {
+      label: "News", single: "story", idField: "title",
+      icon: '<path d="M4 5h13v14H6a2 2 0 0 1-2-2zM17 8h3v9a2 2 0 0 1-2 2M7 9h7M7 12h7M7 15h4"/>',
+      meta: function (d) { return (d.date || "") + (d.category ? " · " + d.category : ""); },
+      img: function (d) { return d.image; },
+      fields: [
+        { n: "title", l: "Headline", w: "string", req: 1 },
+        { n: "date", l: "Date", w: "date", req: 1 },
+        { n: "category", l: "Which of the four Ps", w: "select", opts: ["", "Prayer", "Protection", "Prevention", "Partnership & Networking"] },
+        { n: "image", l: "Photo", w: "image" },
+        { n: "summary", l: "One-sentence summary", w: "text", req: 1, span: 1 },
+        { n: "body", l: "The story", w: "markdown", req: 1, hint: "Blank line between paragraphs. **bold** for emphasis, - for lists." },
+      ],
+    },
+    publications: {
+      label: "Publications", single: "publication", idField: "title",
+      icon: '<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 15h7M9 18h4"/>',
+      meta: function (d) { return (d.date || "") + (d.type ? " · " + d.type : ""); },
+      img: function (d) { return d.cover; },
+      fields: [
+        { n: "title", l: "Title", w: "string", req: 1 },
+        { n: "date", l: "Publication date", w: "date", req: 1 },
+        { n: "type", l: "Type", w: "select", req: 1, opts: ["Annual Report", "Policy Brief", "Research Report", "Training Manual", "Awareness Material", "Newsletter", "Case Study", "Prayer Resource"] },
+        { n: "lang", l: "Language", w: "select", opts: [["en", "English"], ["sw", "Kiswahili"]] },
+        { n: "themes", l: "Themes (up to three)", w: "multi", opts: THEMES, max: 3 },
+        { n: "summary", l: "Short summary", w: "text", req: 1 },
+        { n: "pdf", l: "PDF file", w: "file", req: 1, hint: "The document itself, up to about 4 MB" },
+        { n: "cover", l: "Cover image", w: "image" },
+        { n: "pages", l: "Number of pages", w: "number" },
+        { n: "issuer", l: "Issuer", w: "string", def: "Talitha Kum Kenya" },
+        { n: "keywords", l: "Keywords", w: "tags", hint: "Comma-separated: places, partners, target groups" },
+        { n: "featured", l: "Feature this at the top", w: "bool" },
+      ],
+    },
+    videos: {
+      label: "Videos", single: "video", idField: "title",
+      icon: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/>',
+      meta: function (d) { return (d.date || "") + (d.type ? " · " + d.type : ""); },
+      img: function () { return null; },
+      fields: [
+        { n: "title", l: "Title", w: "string", req: 1 },
+        { n: "url", l: "Video link", w: "string", req: 1, hint: "Paste the YouTube or Vimeo link — share links and Shorts all work" },
+        { n: "date", l: "Date", w: "date", req: 1 },
+        { n: "type", l: "Type", w: "select", req: 1, opts: ["Awareness Video", "Testimony", "Training", "Event Highlights", "Interview", "Prayer & Reflection", "Documentary", "Public Service Announcement"] },
+        { n: "themes", l: "Themes (up to three)", w: "multi", opts: THEMES, max: 3 },
+        { n: "summary", l: "Short description", w: "text" },
+        { n: "dur", l: "Length", w: "string", hint: "e.g. 4:32 — shown on the thumbnail" },
+        { n: "featured", l: "Feature this at the top", w: "bool" },
+      ],
+    },
+    team: {
+      label: "Team", single: "person", idField: "name",
+      icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16 5.6a3 3 0 0 1 0 5M17.5 14.4c1.7.7 2.7 2.2 3 4.6"/>',
+      meta: function (d) { return (d.role || "") + " · order " + (d.order == null ? 50 : d.order); },
+      img: function (d) { return d.photo; },
+      fields: [
+        { n: "name", l: "Full name", w: "string", req: 1, hint: "Including Sr., Bro., Fr." },
+        { n: "role", l: "Designation", w: "string", req: 1, hint: "e.g. Board Vice Chair" },
+        { n: "group", l: "Group", w: "select", opts: ["Board", "Staff"], def: "Board" },
+        { n: "order", l: "Display order", w: "number", def: 50, hint: "Lower comes first: director 5, chair 10, vice chair 20, members 50" },
+        { n: "photo", l: "Photograph", w: "image", hint: "Portrait orientation works best; without one the card shows initials" },
+        { n: "bio", l: "Short biography", w: "text", hint: "Only people with a biography are clickable on the page" },
+      ],
+    },
+  };
+  var ICON_GALLERY = '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m5 17 4.5-4.5 3 3L17 11l2.5 2.5"/>';
+  var ICON_USERS = '<circle cx="12" cy="7.5" r="3.4"/><path d="M5 19.5c.8-3.8 3.4-5.8 7-5.8s6.2 2 7 5.8"/>';
+
+  /* ------------------------------------------------------------ rendering */
+
+  function icon(d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>"; }
+
+  function route() {
+    var h = location.hash.replace(/^#\/?/, "");
+    var parts = h.split("/").filter(Boolean);
+    if (!me) return renderAuth();
+    var allowed = me.sections || [];
+    var first = allowed[0] || (me.role === "admin" ? "users" : null);
+    if (!parts[0]) parts = [first || "account"];
+    var section = parts[0];
+    if (section === "users" && me.role !== "admin") section = first;
+    if (SECTIONS[section] && allowed.indexOf(section) < 0 && me.role !== "admin") section = first;
+    if (section === "gallery" && (me.role === "admin" || allowed.indexOf("gallery") >= 0)) return renderGallery();
+    if (section === "users") return renderUsers();
+    if (section === "account") return renderAccount();
+    if (SECTIONS[section]) {
+      if (parts[1] === "new") return renderEdit(section, null);
+      if (parts[1]) return renderEdit(section, decodeURIComponent(parts[1]));
+      return renderList(section);
+    }
+    location.hash = "#/" + (first || "account");
+  }
+
+  function shell(active, inner) {
+    var navItems = "";
+    var order = ["news", "publications", "videos", "team"];
+    order.forEach(function (k) {
+      if (me.role !== "admin" && me.sections.indexOf(k) < 0) return;
+      navItems += '<button class="nitem' + (active === k ? " on" : "") + '" data-nav="' + k + '">' + icon(SECTIONS[k].icon) + SECTIONS[k].label + "</button>";
+    });
+    if (me.role === "admin" || me.sections.indexOf("gallery") >= 0) {
+      navItems += '<button class="nitem' + (active === "gallery" ? " on" : "") + '" data-nav="gallery">' + icon(ICON_GALLERY) + "Gallery</button>";
+    }
+    var adminNav = me.role === "admin"
+      ? '<div class="nav-label">Manage</div><button class="nitem' + (active === "users" ? " on" : "") + '" data-nav="users">' + icon(ICON_USERS) + "Users</button>"
+      : "";
+    app.innerHTML =
+      '<div class="shell"><aside class="side">' +
+      '<div class="brand"><img src="/uploads/tik-logo.png" alt=""><div><b>Talitha Kum</b><span>Admin panel</span></div></div>' +
+      '<div class="nav-label">Content</div>' + navItems + adminNav +
+      '<div class="foot"><div class="who"><b>' + esc(me.name) + '</b><span>' + esc(me.role === "admin" ? "Administrator" : "Editor") + '</span></div>' +
+      '<button class="nitem' + (active === "account" ? " on" : "") + '" data-nav="account">' + icon('<circle cx="12" cy="12" r="3"/><path d="M12 5v-1M12 20v-1M5 12H4M20 12h-1M6.8 6.8l-.7-.7M17.9 17.9l-.7-.7M17.2 6.8l.7-.7M6.1 17.9l.7-.7"/>') + "Account</button>" +
+      '<button class="nitem" id="viewsite">' + icon('<path d="M4 12c2.7-4.7 13.3-4.7 16 0-2.7 4.7-13.3 4.7-16 0z"/><circle cx="12" cy="12" r="2.2"/>') + "View site</button>" +
+      '<button class="nitem" id="logout">' + icon('<path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3M14 8l4 4-4 4M18 12H9"/>') + "Sign out</button>" +
+      "</div></aside><main class=\"main\">" + inner + "</main></div>";
+    app.querySelectorAll("[data-nav]").forEach(function (b) {
+      b.onclick = function () { location.hash = "#/" + b.getAttribute("data-nav"); };
+    });
+    $("#viewsite").onclick = function () { window.open("/", "_blank"); };
+    $("#logout").onclick = function () {
+      api("logout", { method: "POST" }).then(function () { me = null; route(); });
+    };
+  }
+
+  /* ---------------------------------------------------------------- auth */
+
+  function renderAuth() {
+    api("status").then(function (s) {
+      if (s.user) { me = s.user; return route(); }
+      var setup = s.setup;
+      app.innerHTML =
+        '<div class="auth"><form class="auth-card" id="af">' +
+        '<img src="/uploads/tik-logo.png" alt="">' +
+        "<h1>" + (setup ? "Welcome — create the first account" : "Sign in") + "</h1>" +
+        '<p class="sub">' + (setup ? "This first account is the administrator. You can invite editors afterwards." : "The admin panel for talithakumraht.org") + "</p>" +
+        '<div class="err" id="aerr"></div>' +
+        (setup ? '<label class="f"><span>Your name</span><input class="in" name="name" required autocomplete="name"></label>' : "") +
+        '<label class="f"><span>Email</span><input class="in" type="email" name="email" required autocomplete="username"></label>' +
+        '<label class="f"><span>Password</span><input class="in" type="password" name="password" required minlength="8" autocomplete="' + (setup ? "new-password" : "current-password") + '"></label>' +
+        '<button class="btn" style="width:100%;justify-content:center">' + (setup ? "Create account" : "Sign in") + "</button></form></div>";
+      $("#af").onsubmit = function (e) {
+        e.preventDefault();
+        var f = e.target;
+        api(setup ? "setup" : "login", { method: "POST", body: { name: f.name && f.name.value, email: f.email.value, password: f.password.value } })
+          .then(function (d) { me = d.user; location.hash = ""; route(); })
+          .catch(function (err) { var el = $("#aerr"); el.textContent = err.message; el.className = "err show"; });
+      };
+    }).catch(function () {
+      app.innerHTML = '<div class="auth"><div class="auth-card"><h1>Panel unavailable</h1><p class="sub">The admin API did not answer. If the site was just set up, make sure the Netlify function deployed.</p></div></div>';
+    });
+  }
+
+  /* --------------------------------------------------------------- lists */
+
+  function renderList(type) {
+    var S = SECTIONS[type];
+    shell(type, '<div class="crumbs">Content</div><div class="head"><h1>' + S.label + '</h1>' +
+      '<button class="btn" id="newbtn">+ New ' + S.single + "</button></div><div class=\"rows\" id=\"rows\"><div class=\"empty\">Loading…</div></div>");
+    $("#newbtn").onclick = function () { location.hash = "#/" + type + "/new"; };
+    api("content/" + type).then(function (d) {
+      var items = d.items || [];
+      items.sort(function (a, b) {
+        if (type === "team") return (a.data.order || 50) - (b.data.order || 50);
+        return String(b.data.date || "").localeCompare(String(a.data.date || ""));
+      });
+      var rows = $("#rows");
+      if (!items.length) { rows.innerHTML = '<div class="empty">Nothing here yet — add the first ' + S.single + ".</div>"; return; }
+      rows.innerHTML = items.map(function (it) {
+        var d = it.data, img = S.img(d);
+        var initials = String(d[S.idField] || "?").split(/\s+/).map(function (w) { return w[0]; }).filter(function (c, i) { return i < 2 && /[A-Za-z]/.test(c || ""); }).join("").toUpperCase();
+        return '<div class="row" data-slug="' + esc(it.slug) + '">' +
+          (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<span class="mono">' + esc(initials) + "</span>") +
+          "<div><b>" + esc(d[S.idField] || it.slug) + '</b><div class="meta">' + esc(S.meta(d)) + "</div></div>" +
+          (d.featured ? '<span class="tag">Featured</span>' : "") + "</div>";
+      }).join("");
+      rows.querySelectorAll(".row").forEach(function (r) {
+        r.onclick = function () { location.hash = "#/" + type + "/" + encodeURIComponent(r.getAttribute("data-slug")); };
+      });
+    }).catch(function (e) { $("#rows").innerHTML = '<div class="empty">' + esc(e.message) + "</div>"; });
+  }
+
+  /* -------------------------------------------------------------- editor */
+
+  function fieldHtml(f, val) {
+    var v = val == null ? (f.def != null ? f.def : "") : val;
+    var span = f.w === "markdown" || f.w === "text" || f.w === "multi" || f.w === "tags" ? ' class="f span2"' : ' class="f"';
+    var inner;
+    if (f.w === "string") inner = '<input class="in" data-f="' + f.n + '" value="' + esc(v) + '"' + (f.req ? " required" : "") + ">";
+    else if (f.w === "number") inner = '<input class="in" type="number" data-f="' + f.n + '" value="' + esc(v === "" ? "" : v) + '">';
+    else if (f.w === "date") inner = '<input class="in" type="date" data-f="' + f.n + '" value="' + esc(v) + '"' + (f.req ? " required" : "") + ">";
+    else if (f.w === "text") inner = '<textarea class="in" data-f="' + f.n + '"' + (f.req ? " required" : "") + ">" + esc(v) + "</textarea>";
+    else if (f.w === "markdown") inner = '<textarea class="in tall" data-f="' + f.n + '"' + (f.req ? " required" : "") + ">" + esc(v) + "</textarea>";
+    else if (f.w === "bool") {
+      return '<label class="f" style="display:flex;align-items:center;gap:10px;margin-top:6px"><input type="checkbox" data-f="' + f.n + '"' + (v ? " checked" : "") + ' style="width:18px;height:18px;accent-color:var(--accent)"> <span style="margin:0">' + esc(f.l) + "</span></label>";
+    }
+    else if (f.w === "select") {
+      inner = '<select class="in" data-f="' + f.n + '">' + f.opts.map(function (o) {
+        var value = Array.isArray(o) ? o[0] : o, label = Array.isArray(o) ? o[1] : (o || "—");
+        return '<option value="' + esc(value) + '"' + (String(v) === String(value) ? " selected" : "") + ">" + esc(label) + "</option>";
+      }).join("") + "</select>";
+    }
+    else if (f.w === "multi") {
+      inner = '<div class="chips" data-multi="' + f.n + '" data-max="' + (f.max || 99) + '">' + f.opts.map(function (o) {
+        var on = Array.isArray(v) && v.indexOf(o) >= 0;
+        return "<label><input type=\"checkbox\" value=\"" + esc(o) + '"' + (on ? " checked" : "") + ">" + esc(o) + "</label>";
+      }).join("") + "</div>";
+    }
+    else if (f.w === "tags") inner = '<input class="in" data-f="' + f.n + '" data-tags="1" value="' + esc(Array.isArray(v) ? v.join(", ") : v) + '">';
+    else if (f.w === "image" || f.w === "file") {
+      var isImg = f.w === "image";
+      inner = '<div class="imgpick" data-pick="' + f.n + '">' +
+        (v ? (isImg ? '<img src="' + esc(v) + '" alt="">' : '<span class="ph">PDF</span>') : '<span class="ph">' + (isImg ? "No image" : "No file") + "</span>") +
+        '<input type="hidden" data-f="' + f.n + '" value="' + esc(v) + '">' +
+        '<div><button type="button" class="btn ghost small pickbtn">' + (v ? "Replace" : "Choose") + "…</button>" +
+        (v ? ' <button type="button" class="btn ghost small clearbtn">Remove</button>' : "") +
+        '<input type="file" accept="' + (isImg ? "image/*" : ".pdf") + '" hidden></div></div>';
+    }
+    return "<label" + span + "><span>" + esc(f.l) + "</span>" + inner + (f.hint ? '<div class="hint">' + esc(f.hint) + "</div>" : "") + "</label>";
+  }
+
+  function wireUploads(rootEl) {
+    rootEl.querySelectorAll("[data-pick]").forEach(function (p) {
+      var fileIn = p.querySelector("input[type=file]");
+      p.querySelector(".pickbtn").onclick = function () { fileIn.click(); };
+      var clear = p.querySelector(".clearbtn");
+      if (clear) clear.onclick = function () {
+        p.querySelector("[data-f]").value = "";
+        var img = p.querySelector("img"); if (img) img.remove();
+        clear.remove();
+        toast("Removed — save to make it permanent", true);
+      };
+      fileIn.onchange = function () {
+        var file = fileIn.files[0];
+        if (!file) return;
+        if (file.size > 4.2 * 1024 * 1024) { toast("That file is bigger than 4 MB — please shrink it first"); return; }
+        var btn = p.querySelector(".pickbtn"); btn.disabled = true; btn.textContent = "Uploading…";
+        var rd = new FileReader();
+        rd.onload = function () {
+          api("upload", { method: "POST", body: { name: file.name, data: String(rd.result).split(",")[1] } })
+            .then(function (d) {
+              p.querySelector("[data-f]").value = d.path;
+              var img = p.querySelector("img"), ph = p.querySelector(".ph");
+              if (/\.pdf$/i.test(d.path)) { if (ph) ph.textContent = "PDF ✓"; }
+              else if (img) img.src = d.path;
+              else { if (ph) ph.remove(); p.insertAdjacentHTML("afterbegin", '<img src="' + d.path + '" alt="">'); }
+              btn.textContent = "Replace…"; btn.disabled = false;
+              toast("Uploaded", true);
+            })
+            .catch(function (e) { btn.textContent = "Choose…"; btn.disabled = false; toast(e.message); });
+        };
+        rd.readAsDataURL(file);
+      };
+    });
+  }
+
+  function renderEdit(type, slug) {
+    var S = SECTIONS[type];
+    var isNew = !slug;
+    function draw(data) {
+      shell(type,
+        '<div class="crumbs">' + S.label + '</div><div class="head"><h1>' + (isNew ? "New " + S.single : esc(data[S.idField] || slug)) + "</h1></div>" +
+        '<form class="panel" id="ef"><div class="err" id="eerr"></div><div class="grid2">' +
+        S.fields.map(function (f) { return fieldHtml(f, data[f.n]); }).join("") +
+        '</div><div class="bar"><button class="btn" type="submit">Publish</button>' +
+        '<button class="btn ghost" type="button" id="backbtn">Back</button><span class="grow"></span>' +
+        (isNew ? "" : '<button class="btn danger" type="button" id="delbtn">Delete</button>') +
+        "</div></form>");
+      var form = $("#ef");
+      wireUploads(form);
+      $("#backbtn").onclick = function () { location.hash = "#/" + type; };
+      if (!isNew) $("#delbtn").onclick = function () {
+        if (!confirm("Delete this " + S.single + "? It disappears from the site in about a minute.")) return;
+        api("content/" + type + "/" + encodeURIComponent(slug), { method: "DELETE" })
+          .then(function () { toast("Deleted — the site is rebuilding", true); location.hash = "#/" + type; })
+          .catch(function (e) { toast(e.message); });
+      };
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        var out = {};
+        var bad = null;
+        S.fields.forEach(function (f) {
+          var el = form.querySelector('[data-f="' + f.n + '"]');
+          var multi = form.querySelector('[data-multi="' + f.n + '"]');
+          var v;
+          if (multi) {
+            v = Array.prototype.slice.call(multi.querySelectorAll("input:checked")).map(function (i) { return i.value; });
+            if (v.length > Number(multi.getAttribute("data-max"))) bad = "Pick at most " + multi.getAttribute("data-max") + " " + f.l.toLowerCase();
+          }
+          else if (el && el.type === "checkbox") v = el.checked;
+          else if (el && el.getAttribute("data-tags")) v = el.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+          else if (el && el.type === "number") v = el.value === "" ? (f.def != null ? f.def : 0) : Number(el.value);
+          else v = el ? el.value.trim() : "";
+          if (f.req && (v === "" || (Array.isArray(v) && !v.length))) bad = bad || ('"' + f.l + '" is required');
+          out[f.n] = v;
+        });
+        if (bad) { var er = $("#eerr"); er.textContent = bad; er.className = "err show"; window.scrollTo(0, 0); return; }
+        var target = slug || slugify(out[S.idField]);
+        var btn = form.querySelector("button[type=submit]");
+        btn.disabled = true; btn.textContent = "Publishing…";
+        api("content/" + type + "/" + encodeURIComponent(target), { method: "PUT", body: { data: out } })
+          .then(function () {
+            toast("Published — live on the site in about a minute", true);
+            location.hash = "#/" + type;
+          })
+          .catch(function (e) { btn.disabled = false; btn.textContent = "Publish"; toast(e.message); });
+      };
+    }
+    if (isNew) draw({});
+    else api("content/" + type + "/" + encodeURIComponent(slug)).then(function (d) { draw(d.data); })
+      .catch(function (e) { toast(e.message); location.hash = "#/" + type; });
+  }
+
+  /* ------------------------------------------------------------- gallery */
+
+  function renderGallery() {
+    shell("gallery", '<div class="crumbs">Content</div><div class="head"><h1>Gallery</h1>' +
+      '<div><button class="btn ghost" id="addph">+ Add photos</button> <button class="btn" id="savegal">Publish gallery</button></div></div>' +
+      '<p class="hint" style="margin:-14px 0 18px">Newest first — the first photo is the first on the page. Eight per page; more photos add pages automatically.</p>' +
+      '<div class="gal" id="gal"><div class="empty">Loading…</div></div>' +
+      '<input type="file" id="galfile" accept="image/*" multiple hidden>');
+    var photos = [];
+    function draw() {
+      var g = $("#gal");
+      if (!photos.length) { g.innerHTML = '<div class="empty">No photos yet — add the first ones.</div>'; return; }
+      g.innerHTML = photos.map(function (p, i) {
+        return '<div class="gitem"><img src="' + esc(p.image) + '" alt=""><div class="gbody">' +
+          '<input placeholder="Caption" value="' + esc(p.caption || "") + '" data-cap="' + i + '">' +
+          '<div class="gops"><button data-mv="' + i + ':-1" title="Earlier">←</button><button data-mv="' + i + ':1" title="Later">→</button><button data-rm="' + i + '">Remove</button></div></div></div>';
+      }).join("");
+      g.querySelectorAll("[data-cap]").forEach(function (inp) {
+        inp.oninput = function () { photos[Number(inp.getAttribute("data-cap"))].caption = inp.value; };
+      });
+      g.querySelectorAll("[data-mv]").forEach(function (b) {
+        b.onclick = function () {
+          var kv = b.getAttribute("data-mv").split(":"), i = Number(kv[0]), d = Number(kv[1]), j = i + d;
+          if (j < 0 || j >= photos.length) return;
+          var t = photos[i]; photos[i] = photos[j]; photos[j] = t; draw();
+        };
+      });
+      g.querySelectorAll("[data-rm]").forEach(function (b) {
+        b.onclick = function () { photos.splice(Number(b.getAttribute("data-rm")), 1); draw(); };
+      });
+    }
+    api("content/gallery").then(function (d) { photos = (d.data && d.data.photos) || []; draw(); });
+    $("#addph").onclick = function () { $("#galfile").click(); };
+    $("#galfile").onchange = function () {
+      var files = Array.prototype.slice.call($("#galfile").files);
+      if (!files.length) return;
+      toast("Uploading " + files.length + " photo" + (files.length > 1 ? "s" : "") + "…", true);
+      var chain = Promise.resolve();
+      files.forEach(function (file) {
+        chain = chain.then(function () {
+          if (file.size > 4.2 * 1024 * 1024) { toast(file.name + " is bigger than 4 MB — skipped"); return; }
+          return new Promise(function (res) {
+            var rd = new FileReader();
+            rd.onload = function () {
+              api("upload", { method: "POST", body: { name: file.name, data: String(rd.result).split(",")[1] } })
+                .then(function (d) { photos.unshift({ image: d.path, caption: "" }); draw(); res(); })
+                .catch(function (e) { toast(e.message); res(); });
+            };
+            rd.readAsDataURL(file);
+          });
+        });
+      });
+      chain.then(function () { toast("Uploads done — press Publish gallery to make them live", true); });
+    };
+    $("#savegal").onclick = function () {
+      var btn = $("#savegal"); btn.disabled = true; btn.textContent = "Publishing…";
+      api("content/gallery", { method: "PUT", body: { data: { photos: photos } } })
+        .then(function () { btn.disabled = false; btn.textContent = "Publish gallery"; toast("Published — live in about a minute", true); })
+        .catch(function (e) { btn.disabled = false; btn.textContent = "Publish gallery"; toast(e.message); });
+    };
+  }
+
+  /* --------------------------------------------------------------- users */
+
+  var SEC_LABELS = { news: "News", publications: "Publications", videos: "Videos", team: "Team", gallery: "Gallery" };
+
+  function renderUsers() {
+    shell("users", '<div class="crumbs">Manage</div><div class="head"><h1>Users</h1>' +
+      '<button class="btn" id="adduser">+ Add user</button></div>' +
+      '<div class="rows" id="ulist"><div class="empty">Loading…</div></div><div id="uform"></div>');
+    var listEl = $("#ulist");
+    function load() {
+      api("users").then(function (d) {
+        listEl.innerHTML = d.users.map(function (u) {
+          return '<div class="row" data-u="' + esc(u.email) + '"><span class="mono">' +
+            esc(u.name.split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join("").toUpperCase()) + "</span>" +
+            "<div><b>" + esc(u.name) + '</b><div class="meta">' + esc(u.email) + '</div>' +
+            '<div class="seclist">' + (u.role === "admin" ? "Everything, and manages users" : (u.sections.map(function (s) { return SEC_LABELS[s]; }).join(", ") || "No sections yet")) + "</div></div>" +
+            '<span class="role ' + u.role + '">' + u.role + "</span></div>";
+        }).join("") || '<div class="empty">No users.</div>';
+        listEl.querySelectorAll(".row").forEach(function (r) {
+          r.onclick = function () {
+            var u = d.users.filter(function (x) { return x.email === r.getAttribute("data-u"); })[0];
+            form(u);
+          };
+        });
+      });
+    }
+    function form(u) {
+      var isNew = !u;
+      $("#uform").innerHTML = '<form class="panel" style="margin-top:20px" id="uf">' +
+        "<h3 style=\"margin-bottom:16px\">" + (isNew ? "Add a user" : "Edit " + esc(u.name)) + '</h3><div class="err" id="uerr"></div><div class="grid2">' +
+        '<label class="f"><span>Name</span><input class="in" name="name" required value="' + esc(u ? u.name : "") + '"></label>' +
+        '<label class="f"><span>Email</span><input class="in" type="email" name="email" required ' + (isNew ? "" : "readonly ") + 'value="' + esc(u ? u.email : "") + '"></label>' +
+        '<label class="f"><span>' + (isNew ? "Password" : "New password (leave blank to keep)") + '</span><input class="in" type="password" name="password" ' + (isNew ? "required " : "") + 'minlength="8" autocomplete="new-password"></label>' +
+        '<label class="f"><span>Role</span><select class="in" name="role"><option value="editor"' + (!u || u.role === "editor" ? " selected" : "") + '>Editor — chosen sections only</option><option value="admin"' + (u && u.role === "admin" ? " selected" : "") + ">Admin — everything, and manages users</option></select></label>" +
+        '<div class="f span2"><span class="f-label">Sections this editor can manage</span><div class="chips" id="usecs">' +
+        Object.keys(SEC_LABELS).map(function (s) {
+          var on = u ? u.sections.indexOf(s) >= 0 : true;
+          return "<label><input type=\"checkbox\" value=\"" + s + '"' + (on ? " checked" : "") + ">" + SEC_LABELS[s] + "</label>";
+        }).join("") + "</div></div>" +
+        '</div><div class="bar"><button class="btn" type="submit">' + (isNew ? "Create user" : "Save changes") + "</button>" +
+        '<button class="btn ghost" type="button" id="ucancel">Cancel</button><span class="grow"></span>' +
+        (isNew || u.email === me.email ? "" : '<button class="btn danger" type="button" id="udel">Remove user</button>') +
+        "</div></form>";
+      $("#ucancel").onclick = function () { $("#uform").innerHTML = ""; };
+      var del = $("#udel");
+      if (del) del.onclick = function () {
+        if (!confirm("Remove " + u.name + "? They will no longer be able to sign in.")) return;
+        api("users/" + encodeURIComponent(u.email), { method: "DELETE" }).then(function () { $("#uform").innerHTML = ""; load(); toast("User removed", true); }).catch(function (e) { toast(e.message); });
+      };
+      $("#uf").onsubmit = function (e) {
+        e.preventDefault();
+        var f = e.target;
+        var sections = Array.prototype.slice.call($("#usecs").querySelectorAll("input:checked")).map(function (i) { return i.value; });
+        api("users", { method: "POST", body: { name: f.name.value, email: f.email.value, password: f.password.value || undefined, role: f.role.value, sections: sections } })
+          .then(function () { $("#uform").innerHTML = ""; load(); toast(isNew ? "User created — share their email and password with them" : "Saved", true); })
+          .catch(function (err) { var el = $("#uerr"); el.textContent = err.message; el.className = "err show"; });
+      };
+      $("#uform").scrollIntoView({ behavior: "smooth" });
+    }
+    $("#adduser").onclick = function () { form(null); };
+    load();
+  }
+
+  /* -------------------------------------------------------------- account */
+
+  function renderAccount() {
+    shell("account", '<div class="crumbs">You</div><div class="head"><h1>Account</h1></div>' +
+      '<form class="panel" id="pf" style="max-width:460px"><h3 style="margin-bottom:16px">Change password</h3><div class="err" id="perr"></div>' +
+      '<label class="f"><span>Current password</span><input class="in" type="password" name="current" required autocomplete="current-password"></label>' +
+      '<label class="f"><span>New password</span><input class="in" type="password" name="next" required minlength="8" autocomplete="new-password"></label>' +
+      '<div class="bar"><button class="btn">Change password</button></div></form>');
+    $("#pf").onsubmit = function (e) {
+      e.preventDefault();
+      api("password", { method: "POST", body: { current: e.target.current.value, next: e.target.next.value } })
+        .then(function () { e.target.reset(); toast("Password changed", true); })
+        .catch(function (err) { var el = $("#perr"); el.textContent = err.message; el.className = "err show"; });
+    };
+  }
+
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
 </body>
 </html>
