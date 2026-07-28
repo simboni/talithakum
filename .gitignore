@@ -21,3 +21,9 @@ dist/publications/shots/
 /node_modules
 test/videos-harness.html
 test/team-harness.html
+
+# Reference archive of the old site (uploaded by the client) - too heavy for git.
+# Only the handful of images the preview embeds are kept.
+assets/site-src/html/
+assets/site-src/css/
+assets/site-src/js/
