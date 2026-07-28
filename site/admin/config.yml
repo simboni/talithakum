@@ -3,10 +3,15 @@
 # site/static/uploads/. Every publish commits to the repository and Netlify
 # rebuilds the site, so a change is live in about a minute.
 
-# The branch below must be the branch Netlify deploys (the repository's
-# default). If the repo is ever renamed to use a main branch, update it here.
+# GitHub sign-in via Netlify's free OAuth broker (Netlify Identity requires a
+# paid plan on new projects). Editors log in with a GitHub account that has
+# write access to the repository. Requires a GitHub OAuth app whose callback
+# is https://api.netlify.com/auth/done, installed in the Netlify dashboard
+# under Access & security -> OAuth.
+# The branch must be the branch Netlify deploys (the repository's default).
 backend:
-  name: git-gateway
+  name: github
+  repo: simboni/talithakum
   branch: claude/talithakum-repo-sug8lg
 
 media_folder: "site/static/uploads"
