@@ -107,6 +107,19 @@ const ROUTES = {
   "https://talithakumraht.org/donate/": "donate",
 };
 
+/* The artifact viewer opens any absolute URL in a new tab before page
+   scripts can intercept the click, so the preview must never carry one.
+   Internal pages become hash links; everything else external becomes an
+   inert link that explains itself in a toast. */
+function rewriteLinks(s) {
+  s = s.replace(/href="(https:\/\/talithakumraht\.org[^"]*)"/g, (m, url) => {
+    const name = ROUTES[url];
+    if (name) return `href="#p-${name}"`;
+    return `href="#ext" data-ext="${url.replace("https://talithakumraht.org", "")}"`;
+  });
+  return s;
+}
+
 let body = swapImages(head.trim());
 body += Object.entries(PAGES).map(([n, c]) => {
   let s = swapImages(c.trim());
@@ -115,10 +128,10 @@ body += Object.entries(PAGES).map(([n, c]) => {
   return `<div class="pv-page" data-page="${n}" ${n === "home" ? "" : "hidden"}>${s}</div>`;
 }).join("\n");
 body += swapImages(foot.trim());
+body = rewriteLinks(body);
 
 const router = `
 (function () {
-  var ROUTES = ${JSON.stringify(ROUTES)};
   function show(name) {
     document.querySelectorAll(".pv-page").forEach(function (p) {
       p.hidden = p.getAttribute("data-page") !== name;
@@ -137,15 +150,16 @@ const router = `
   document.addEventListener("click", function (ev) {
     var a = ev.target.closest && ev.target.closest("a[href]");
     if (!a) return;
-    var name = ROUTES[a.getAttribute("href")];
-    if (name) { ev.preventDefault(); show(name); return; }
-    if (a.getAttribute("href").indexOf("talithakumraht.org") > -1) {
+    var href = a.getAttribute("href") || "";
+    if (href.indexOf("#p-") === 0) { ev.preventDefault(); show(href.slice(3)); return; }
+    if (a.hasAttribute("data-ext")) {
       ev.preventDefault();
       var t = document.querySelector(".pv-toast");
-      t.textContent = "On the live site this opens " + a.getAttribute("href").replace("https://talithakumraht.org", "");
+      t.textContent = "On the live site this opens " + a.getAttribute("data-ext") +
+        " \u2014 that page is not part of this preview.";
       t.classList.add("is-on");
       clearTimeout(t._h);
-      t._h = setTimeout(function () { t.classList.remove("is-on"); }, 2600);
+      t._h = setTimeout(function () { t.classList.remove("is-on"); }, 2800);
     }
   }, true);
 })();
