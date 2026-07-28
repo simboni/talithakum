@@ -439,10 +439,30 @@ body.tks-locked { overflow: hidden; }
 /* --- News: flat editorial cards -------------------------------------------- */
 
 .tks-news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; }
+
+/* Category tabs on the news and category pages */
+.tks-cattabs { display: flex; flex-wrap: wrap; gap: 10px; margin: -8px 0 34px; }
+.tks-cattabs a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid var(--s-line); border-radius: 999px;
+  background: var(--s-surface); font-weight: 700; font-size: 13.5px;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.tks-cattabs a b { font-size: 11.5px; font-weight: 800; color: var(--s-muted); }
+.tks-cattabs a:hover { border-color: var(--s-accent); color: var(--s-accent); }
+.tks-cattabs a.is-on { background: var(--s-accent); border-color: var(--s-accent); color: #fff; }
+.tks-cattabs a.is-on b { color: rgba(255, 255, 255, .75); }
+
 .tks-ncard { display: flex; flex-direction: column; }
 .tks-ncard .tks-nimg {
-  aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
+  position: relative; aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
   background: linear-gradient(140deg, var(--s-accent), #8a2606);
+}
+.tks-ncard .tks-ntag {
+  position: absolute; left: 10px; top: 10px;
+  background: rgba(255, 253, 249, .92); color: #46301f;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 999px;
 }
 .tks-ncard .tks-nimg img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.6,.2,1); }
 .tks-ncard:hover .tks-nimg img { transform: scale(1.06); }

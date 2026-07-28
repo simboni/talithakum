@@ -373,9 +373,22 @@ const CATS = {
   "partnership-networking": "Partnership & Networking",
 };
 
+/* Category tabs shown on /news/ and every /category/ page: All + the four Ps,
+   each with its story count, the current page highlighted. */
+function catTabs(active) {
+  const tabs = [["", "All", news.length]].concat(
+    Object.entries(CATS).map(([slug, name]) => [slug, name,
+      news.filter((n) => (n.category || "") === name || (n.category || "") === slug).length])
+  );
+  return `<nav class="tks-cattabs" aria-label="Story categories">
+    ${tabs.map(([slug, name, count]) => `<a href="${slug ? `/category/${slug}/` : "/news/"}"
+      ${slug === (active || "") ? 'class="is-on" aria-current="page"' : ""}>${esc(name)} <b>${count}</b></a>`).join("")}
+  </nav>`;
+}
+
 function newsCard(n) {
   return `<a class="tks-ncard" href="/news/${n.slug}/" data-reveal>
-    <span class="tks-nimg">${n.image ? `<img src="${esc(n.image)}" alt="" loading="lazy">` : ""}</span>
+    <span class="tks-nimg">${n.image ? `<img src="${esc(n.image)}" alt="" loading="lazy">` : ""}${n.category ? `<span class="tks-ntag">${esc(n.category)}</span>` : ""}</span>
     <span class="tks-nbody">
       <time>${new Date(n.date + "T12:00:00").toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}</time>
       <h3>${esc(n.title)}</h3><p>${esc(n.summary || "")}</p>
@@ -383,10 +396,11 @@ function newsCard(n) {
     </span></a>`;
 }
 
-function listPage({ kicker, h1, lede, items, empty }) {
+function listPage({ kicker, h1, lede, items, empty, nav = "" }) {
   return `<section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">${esc(kicker)}</span><h1>${esc(h1)}</h1><p>${esc(lede)}</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
+    ${nav}
     ${items.length ? `<div class="tks-news">${items.map(newsCard).join("")}</div>`
       : `<div style="text-align:center;border:1px dashed var(--s-line);border-radius:10px;padding:48px 22px">
            <h3 style="font-size:18px">${esc(empty)}</h3>
@@ -398,7 +412,7 @@ await page("/news/", shell({
   title: "News — Talitha Kum Kenya",
   desc: "Stories and updates from across the network.",
   canonical: "/news/",
-  body: listPage({ kicker: "News", h1: "Latest from the network", lede: "Stories and updates from the field.", items: news, empty: "No stories yet" }),
+  body: listPage({ kicker: "News", h1: "Latest from the network", lede: "Stories and updates from the field.", items: news, empty: "No stories yet", nav: catTabs("") }),
 }));
 
 for (const [slug, name] of Object.entries(CATS)) {
@@ -407,7 +421,7 @@ for (const [slug, name] of Object.entries(CATS)) {
     title: `${name} — Talitha Kum Kenya`,
     desc: `Our work in ${name.toLowerCase()}.`,
     canonical: `/category/${slug}/`,
-    body: listPage({ kicker: "Our work", h1: name, lede: `Stories from our ${name.toLowerCase()} work.`, items, empty: `No ${name.toLowerCase()} stories yet` }),
+    body: listPage({ kicker: "Our work", h1: name, lede: `Stories from our ${name.toLowerCase()} work.`, items, empty: `No ${name.toLowerCase()} stories yet`, nav: catTabs(slug) }),
   }));
 }
 

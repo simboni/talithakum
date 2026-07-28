@@ -187,6 +187,16 @@ for (const r of ROUTES) {
   const { ctx, page } = await open("/category/protection/");
   const n = await page.locator(".tks-ncard").count();
   check("a category page lists its own stories", n === 1, `${n} cards`);
+  const on = await page.locator(".tks-cattabs a.is-on").textContent();
+  check("category tabs highlight the current category", (on || "").includes("Protection"), on);
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/news/");
+  const tabs = await page.locator(".tks-cattabs a").count();
+  check("news page shows the five category tabs", tabs === 5, `${tabs} tabs`);
+  const tags = await page.locator(".tks-ncard .tks-ntag").count();
+  check("news cards carry their category tag", tags === 16, `${tags} tags`);
   await ctx.close();
 }
 

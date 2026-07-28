@@ -479,10 +479,30 @@ body.tks-locked { overflow: hidden; }
 /* --- News: flat editorial cards -------------------------------------------- */
 
 .tks-news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; }
+
+/* Category tabs on the news and category pages */
+.tks-cattabs { display: flex; flex-wrap: wrap; gap: 10px; margin: -8px 0 34px; }
+.tks-cattabs a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid var(--s-line); border-radius: 999px;
+  background: var(--s-surface); font-weight: 700; font-size: 13.5px;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.tks-cattabs a b { font-size: 11.5px; font-weight: 800; color: var(--s-muted); }
+.tks-cattabs a:hover { border-color: var(--s-accent); color: var(--s-accent); }
+.tks-cattabs a.is-on { background: var(--s-accent); border-color: var(--s-accent); color: #fff; }
+.tks-cattabs a.is-on b { color: rgba(255, 255, 255, .75); }
+
 .tks-ncard { display: flex; flex-direction: column; }
 .tks-ncard .tks-nimg {
-  aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
+  position: relative; aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
   background: linear-gradient(140deg, var(--s-accent), #8a2606);
+}
+.tks-ncard .tks-ntag {
+  position: absolute; left: 10px; top: 10px;
+  background: rgba(255, 253, 249, .92); color: #46301f;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 999px;
 }
 .tks-ncard .tks-nimg img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.6,.2,1); }
 .tks-ncard:hover .tks-nimg img { transform: scale(1.06); }
@@ -1163,10 +1183,30 @@ body.tks-locked { overflow: hidden; }
 /* --- News: flat editorial cards -------------------------------------------- */
 
 .tks-news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; }
+
+/* Category tabs on the news and category pages */
+.tks-cattabs { display: flex; flex-wrap: wrap; gap: 10px; margin: -8px 0 34px; }
+.tks-cattabs a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid var(--s-line); border-radius: 999px;
+  background: var(--s-surface); font-weight: 700; font-size: 13.5px;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.tks-cattabs a b { font-size: 11.5px; font-weight: 800; color: var(--s-muted); }
+.tks-cattabs a:hover { border-color: var(--s-accent); color: var(--s-accent); }
+.tks-cattabs a.is-on { background: var(--s-accent); border-color: var(--s-accent); color: #fff; }
+.tks-cattabs a.is-on b { color: rgba(255, 255, 255, .75); }
+
 .tks-ncard { display: flex; flex-direction: column; }
 .tks-ncard .tks-nimg {
-  aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
+  position: relative; aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
   background: linear-gradient(140deg, var(--s-accent), #8a2606);
+}
+.tks-ncard .tks-ntag {
+  position: absolute; left: 10px; top: 10px;
+  background: rgba(255, 253, 249, .92); color: #46301f;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 999px;
 }
 .tks-ncard .tks-nimg img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.6,.2,1); }
 .tks-ncard:hover .tks-nimg img { transform: scale(1.06); }
@@ -3578,10 +3618,30 @@ body.tks-locked { overflow: hidden; }
 /* --- News: flat editorial cards -------------------------------------------- */
 
 .tks-news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; }
+
+/* Category tabs on the news and category pages */
+.tks-cattabs { display: flex; flex-wrap: wrap; gap: 10px; margin: -8px 0 34px; }
+.tks-cattabs a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid var(--s-line); border-radius: 999px;
+  background: var(--s-surface); font-weight: 700; font-size: 13.5px;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.tks-cattabs a b { font-size: 11.5px; font-weight: 800; color: var(--s-muted); }
+.tks-cattabs a:hover { border-color: var(--s-accent); color: var(--s-accent); }
+.tks-cattabs a.is-on { background: var(--s-accent); border-color: var(--s-accent); color: #fff; }
+.tks-cattabs a.is-on b { color: rgba(255, 255, 255, .75); }
+
 .tks-ncard { display: flex; flex-direction: column; }
 .tks-ncard .tks-nimg {
-  aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
+  position: relative; aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
   background: linear-gradient(140deg, var(--s-accent), #8a2606);
+}
+.tks-ncard .tks-ntag {
+  position: absolute; left: 10px; top: 10px;
+  background: rgba(255, 253, 249, .92); color: #46301f;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 999px;
 }
 .tks-ncard .tks-nimg img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.6,.2,1); }
 .tks-ncard:hover .tks-nimg img { transform: scale(1.06); }
@@ -4737,10 +4797,30 @@ body.tks-locked { overflow: hidden; }
 /* --- News: flat editorial cards -------------------------------------------- */
 
 .tks-news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; }
+
+/* Category tabs on the news and category pages */
+.tks-cattabs { display: flex; flex-wrap: wrap; gap: 10px; margin: -8px 0 34px; }
+.tks-cattabs a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid var(--s-line); border-radius: 999px;
+  background: var(--s-surface); font-weight: 700; font-size: 13.5px;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.tks-cattabs a b { font-size: 11.5px; font-weight: 800; color: var(--s-muted); }
+.tks-cattabs a:hover { border-color: var(--s-accent); color: var(--s-accent); }
+.tks-cattabs a.is-on { background: var(--s-accent); border-color: var(--s-accent); color: #fff; }
+.tks-cattabs a.is-on b { color: rgba(255, 255, 255, .75); }
+
 .tks-ncard { display: flex; flex-direction: column; }
 .tks-ncard .tks-nimg {
-  aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
+  position: relative; aspect-ratio: 16 / 10; border-radius: var(--s-radius); overflow: hidden;
   background: linear-gradient(140deg, var(--s-accent), #8a2606);
+}
+.tks-ncard .tks-ntag {
+  position: absolute; left: 10px; top: 10px;
+  background: rgba(255, 253, 249, .92); color: #46301f;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 999px;
 }
 .tks-ncard .tks-nimg img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.6,.2,1); }
 .tks-ncard:hover .tks-nimg img { transform: scale(1.06); }
@@ -7663,98 +7743,101 @@ body.tkteam-locked [id*="back-to-top"] { display: none !important; }
 <section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">News</span><h1>Latest from the network</h1><p>Stories and updates from the field.</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
+    <nav class="tks-cattabs" aria-label="Story categories">
+    <a href="#p-news" class="is-on" aria-current="page">All <b>16</b></a><a href="#p-category-prayer">Prayer <b>1</b></a><a href="#p-category-protection">Protection <b>1</b></a><a href="#p-category-prevention">Prevention <b>10</b></a><a href="#p-category-partnership-networking">Partnership &amp; Networking <b>4</b></a>
+  </nav>
     <div class="tks-news"><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/empowering-young-refugees-talitha-kum-kenya-conducts-human-trafficking-awareness-workshop/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/young-refugees-awareness-workshop.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/young-refugees-awareness-workshop.jpeg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>17 July 2026</time>
       <h3>Empowering Young Refugees: Talitha Kum Kenya Conducts Human Trafficking Awareness Workshop</h3><p>Talitha Kum Kenya held an impactful and inspiring workshop at Our Lady Queen of Peace Catholic Church, South B, focused on creating awareness on human trafficking among youth refugees from the Democratic Republic of&#8230;</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/talitha-kum-kenya-holds-anti-trafficking-awareness-training-at-taita-taveta-national-polytechnic/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/taita-taveta-polytechnic-training.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/taita-taveta-polytechnic-training.jpeg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>16 July 2026</time>
       <h3>Talitha Kum Kenya Holds Anti-Trafficking Awareness Training at Taita Taveta National Polytechnic</h3><p>In November 2025, Talitha Kum Kenya conducted an awareness creation training on human trafficking at Taita Taveta National Polytechnic, bringing together members of the institution's administration, teaching faculty,&#8230;</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/talitha-kum-kenya-participates-in-the-pfan-inaugural-summit-2026-in-abuja-nigeria/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/pfan-inaugural-summit-2026-abuja.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/pfan-inaugural-summit-2026-abuja.jpeg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>13 July 2026</time>
       <h3>Talitha Kum Kenya Participates in the PFAN Inaugural Summit 2026 in Abuja, Nigeria</h3><p>In May 2026, Talitha Kum Kenya was honoured to participate in the inaugural Pan-African Freedom Network (PFAN) Summit held in Abuja, Nigeria.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/strengthening-leadership-advancing-the-fight-against-human-trafficking/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/strengthening-leadership-training.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/strengthening-leadership-training.jpeg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>10 July 2026</time>
       <h3>Strengthening Leadership, Advancing the Fight Against Human Trafficking</h3><p>Talitha Kum Kenya continues to invest in strong leadership and meaningful action in the fight against human trafficking.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#p-news-bakhita-day-marked-across-the-network" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/bakhita-day.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/bakhita-day.jpg" alt="" loading="lazy"><span class="tks-ntag">Prayer</span></span>
     <span class="tks-nbody">
       <time>15 February 2026</time>
       <h3>Bakhita Day marked across the network</h3><p>Parishes and communities across Kenya gathered to mark the feast of St Josephine Bakhita, patron of trafficking survivors.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#p-news-human-trafficking-awareness-month" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/ht-month.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/ht-month.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>26 January 2026</time>
       <h3>Human trafficking awareness month</h3><p>A month of outreach in schools, churches and markets, equipping communities to recognise the signs of trafficking.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#p-news-training-of-trainers-with-border-police" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/tot-police.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/tot-police.jpg" alt="" loading="lazy"><span class="tks-ntag">Protection</span></span>
     <span class="tks-nbody">
       <time>12 December 2025</time>
       <h3>Training of trainers with border police</h3><p>Officers from border counties trained as first responders, closing the gap between rescue and care.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/awareness-program-at-st-peter-the-apostle-catholic-church-in-kikuyu/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/st-peter-apostle-kikuyu-awareness.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/st-peter-apostle-kikuyu-awareness.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Awareness program at St. Peter the Apostle Catholic Church in Kikuyu</h3><p>I n April 2024, St.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/little-sisters-of-st-joseph/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/little-sisters-st-joseph-olepolos.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/little-sisters-st-joseph-olepolos.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Little Sisters of St. Joseph</h3><p>The Little Sisters of St.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/loreto-institute-activities/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/loreto-institute-activities.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/loreto-institute-activities.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Loreto Institute Activities</h3><p>The Loreto Sisters Eastern Africa, a proud member Congregation of Talithakum International Kenya, has embarked on an admirable mission to combat human trafficking, notably through a groundbreaking project implemented in&#8230;</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/rsck-youth-outreach-in-kitui/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/rsck-youth-outreach-kitui.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/rsck-youth-outreach-kitui.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>RSCK Youth Outreach in Kitui</h3><p>In the vibrant setting of the Diocesan youth walk in Kitui, a momentous effort to combat human trafficking unfolded with the organized caravan led by RSCK.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/st-joseph-of-mombasa-awareness-sessions/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/st-joseph-mombasa-awareness-sessions.png" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/st-joseph-mombasa-awareness-sessions.png" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>St. Joseph of Mombasa Awareness Sessions</h3><p>In Mombasa County, a comprehensive five-day training initiative focused on raising awareness about human trafficking recently took place, led by Sr.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/st-patrick-s-society-activity/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/st-patricks-society-utawala-parish.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/st-patricks-society-utawala-parish.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>St. Patrick's Society Activity</h3><p>The St.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/training-of-trainers-for-franciscan-novices/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/franciscan-novices-training-of-trainers.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/franciscan-novices-training-of-trainers.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Training of trainers for Franciscan Novices</h3><p>On April 12th and 13th, 2024, in Karen, Nairobi, an impactful Training of Trainers workshop was hosted by Talithakum International Kenya.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/empowering-communities-insights-from-talitha-kum-international-kenya-network-s-agm/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/talitha-kum-kenya-network-agm-2024.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/talitha-kum-kenya-network-agm-2024.jpg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>27 February 2024</time>
       <h3>Empowering Communities: Insights from Talitha Kum International Kenya Network's AGM</h3><p>We are thrilled to share the highlights from our recent Annual General Meeting (AGM), held on February 24th, 2024.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/building-bridges-empowering-leaders-talitha-kum-international-s-inspiring-training-in-kenya/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/talitha-kum-leadership-training-nairobi.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/talitha-kum-leadership-training-nairobi.jpg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>18 December 2023</time>
       <h3>Building Bridges, Empowering Leaders: Talitha Kum International's Inspiring Training in Kenya</h3><p>From November 19th to 26th, 2023, Nairobi, Kenya became a vibrant hub of hope and purpose.</p>
@@ -9580,8 +9663,11 @@ body.tkteam-locked [id*="back-to-top"] { display: none !important; }
 <section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">Our work</span><h1>Prayer</h1><p>Stories from our prayer work.</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
+    <nav class="tks-cattabs" aria-label="Story categories">
+    <a href="#p-news">All <b>16</b></a><a href="#p-category-prayer" class="is-on" aria-current="page">Prayer <b>1</b></a><a href="#p-category-protection">Protection <b>1</b></a><a href="#p-category-prevention">Prevention <b>10</b></a><a href="#p-category-partnership-networking">Partnership &amp; Networking <b>4</b></a>
+  </nav>
     <div class="tks-news"><a class="tks-ncard is-in" href="#p-news-bakhita-day-marked-across-the-network" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/bakhita-day.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/bakhita-day.jpg" alt="" loading="lazy"><span class="tks-ntag">Prayer</span></span>
     <span class="tks-nbody">
       <time>15 February 2026</time>
       <h3>Bakhita Day marked across the network</h3><p>Parishes and communities across Kenya gathered to mark the feast of St Josephine Bakhita, patron of trafficking survivors.</p>
@@ -9841,8 +9927,11 @@ body.tkteam-locked [id*="back-to-top"] { display: none !important; }
 <section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">Our work</span><h1>Protection</h1><p>Stories from our protection work.</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
+    <nav class="tks-cattabs" aria-label="Story categories">
+    <a href="#p-news">All <b>16</b></a><a href="#p-category-prayer">Prayer <b>1</b></a><a href="#p-category-protection" class="is-on" aria-current="page">Protection <b>1</b></a><a href="#p-category-prevention">Prevention <b>10</b></a><a href="#p-category-partnership-networking">Partnership &amp; Networking <b>4</b></a>
+  </nav>
     <div class="tks-news"><a class="tks-ncard is-in" href="#p-news-training-of-trainers-with-border-police" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/tot-police.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/tot-police.jpg" alt="" loading="lazy"><span class="tks-ntag">Protection</span></span>
     <span class="tks-nbody">
       <time>12 December 2025</time>
       <h3>Training of trainers with border police</h3><p>Officers from border counties trained as first responders, closing the gap between rescue and care.</p>
@@ -10102,62 +10191,65 @@ body.tkteam-locked [id*="back-to-top"] { display: none !important; }
 <section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">Our work</span><h1>Prevention</h1><p>Stories from our prevention work.</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
+    <nav class="tks-cattabs" aria-label="Story categories">
+    <a href="#p-news">All <b>16</b></a><a href="#p-category-prayer">Prayer <b>1</b></a><a href="#p-category-protection">Protection <b>1</b></a><a href="#p-category-prevention" class="is-on" aria-current="page">Prevention <b>10</b></a><a href="#p-category-partnership-networking">Partnership &amp; Networking <b>4</b></a>
+  </nav>
     <div class="tks-news"><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/empowering-young-refugees-talitha-kum-kenya-conducts-human-trafficking-awareness-workshop/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/young-refugees-awareness-workshop.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/young-refugees-awareness-workshop.jpeg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>17 July 2026</time>
       <h3>Empowering Young Refugees: Talitha Kum Kenya Conducts Human Trafficking Awareness Workshop</h3><p>Talitha Kum Kenya held an impactful and inspiring workshop at Our Lady Queen of Peace Catholic Church, South B, focused on creating awareness on human trafficking among youth refugees from the Democratic Republic of&#8230;</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/talitha-kum-kenya-holds-anti-trafficking-awareness-training-at-taita-taveta-national-polytechnic/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/taita-taveta-polytechnic-training.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/taita-taveta-polytechnic-training.jpeg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>16 July 2026</time>
       <h3>Talitha Kum Kenya Holds Anti-Trafficking Awareness Training at Taita Taveta National Polytechnic</h3><p>In November 2025, Talitha Kum Kenya conducted an awareness creation training on human trafficking at Taita Taveta National Polytechnic, bringing together members of the institution's administration, teaching faculty,&#8230;</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#p-news-human-trafficking-awareness-month" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/ht-month.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/ht-month.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>26 January 2026</time>
       <h3>Human trafficking awareness month</h3><p>A month of outreach in schools, churches and markets, equipping communities to recognise the signs of trafficking.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/awareness-program-at-st-peter-the-apostle-catholic-church-in-kikuyu/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/st-peter-apostle-kikuyu-awareness.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/st-peter-apostle-kikuyu-awareness.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Awareness program at St. Peter the Apostle Catholic Church in Kikuyu</h3><p>I n April 2024, St.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/little-sisters-of-st-joseph/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/little-sisters-st-joseph-olepolos.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/little-sisters-st-joseph-olepolos.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Little Sisters of St. Joseph</h3><p>The Little Sisters of St.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/loreto-institute-activities/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/loreto-institute-activities.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/loreto-institute-activities.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Loreto Institute Activities</h3><p>The Loreto Sisters Eastern Africa, a proud member Congregation of Talithakum International Kenya, has embarked on an admirable mission to combat human trafficking, notably through a groundbreaking project implemented in&#8230;</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/rsck-youth-outreach-in-kitui/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/rsck-youth-outreach-kitui.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/rsck-youth-outreach-kitui.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>RSCK Youth Outreach in Kitui</h3><p>In the vibrant setting of the Diocesan youth walk in Kitui, a momentous effort to combat human trafficking unfolded with the organized caravan led by RSCK.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/st-joseph-of-mombasa-awareness-sessions/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/st-joseph-mombasa-awareness-sessions.png" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/st-joseph-mombasa-awareness-sessions.png" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>St. Joseph of Mombasa Awareness Sessions</h3><p>In Mombasa County, a comprehensive five-day training initiative focused on raising awareness about human trafficking recently took place, led by Sr.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/st-patrick-s-society-activity/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/st-patricks-society-utawala-parish.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/st-patricks-society-utawala-parish.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>St. Patrick's Society Activity</h3><p>The St.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/training-of-trainers-for-franciscan-novices/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/franciscan-novices-training-of-trainers.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/franciscan-novices-training-of-trainers.jpg" alt="" loading="lazy"><span class="tks-ntag">Prevention</span></span>
     <span class="tks-nbody">
       <time>6 May 2024</time>
       <h3>Training of trainers for Franciscan Novices</h3><p>On April 12th and 13th, 2024, in Karen, Nairobi, an impactful Training of Trainers workshop was hosted by Talithakum International Kenya.</p>
@@ -10417,26 +10509,29 @@ body.tkteam-locked [id*="back-to-top"] { display: none !important; }
 <section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/hero-network.jpg')"></div>
     <div class="tks-wrap"><span class="tks-kicker">Our work</span><h1>Partnership &amp; Networking</h1><p>Stories from our partnership &amp; networking work.</p></div></section>
   <section class="tks-sec"><div class="tks-wrap">
+    <nav class="tks-cattabs" aria-label="Story categories">
+    <a href="#p-news">All <b>16</b></a><a href="#p-category-prayer">Prayer <b>1</b></a><a href="#p-category-protection">Protection <b>1</b></a><a href="#p-category-prevention">Prevention <b>10</b></a><a href="#p-category-partnership-networking" class="is-on" aria-current="page">Partnership &amp; Networking <b>4</b></a>
+  </nav>
     <div class="tks-news"><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/talitha-kum-kenya-participates-in-the-pfan-inaugural-summit-2026-in-abuja-nigeria/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/pfan-inaugural-summit-2026-abuja.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/pfan-inaugural-summit-2026-abuja.jpeg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>13 July 2026</time>
       <h3>Talitha Kum Kenya Participates in the PFAN Inaugural Summit 2026 in Abuja, Nigeria</h3><p>In May 2026, Talitha Kum Kenya was honoured to participate in the inaugural Pan-African Freedom Network (PFAN) Summit held in Abuja, Nigeria.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/strengthening-leadership-advancing-the-fight-against-human-trafficking/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/strengthening-leadership-training.jpeg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/strengthening-leadership-training.jpeg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>10 July 2026</time>
       <h3>Strengthening Leadership, Advancing the Fight Against Human Trafficking</h3><p>Talitha Kum Kenya continues to invest in strong leadership and meaningful action in the fight against human trafficking.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/empowering-communities-insights-from-talitha-kum-international-kenya-network-s-agm/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/talitha-kum-kenya-network-agm-2024.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/talitha-kum-kenya-network-agm-2024.jpg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>27 February 2024</time>
       <h3>Empowering Communities: Insights from Talitha Kum International Kenya Network's AGM</h3><p>We are thrilled to share the highlights from our recent Annual General Meeting (AGM), held on February 24th, 2024.</p>
       <span class="tks-plink">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></span>
     </span></a><a class="tks-ncard is-in" href="#ext" data-ext="opens /news/building-bridges-empowering-leaders-talitha-kum-international-s-inspiring-training-in-kenya/" data-reveal="">
-    <span class="tks-nimg"><img src="/uploads/talitha-kum-leadership-training-nairobi.jpg" alt="" loading="lazy"></span>
+    <span class="tks-nimg"><img src="/uploads/talitha-kum-leadership-training-nairobi.jpg" alt="" loading="lazy"><span class="tks-ntag">Partnership &amp; Networking</span></span>
     <span class="tks-nbody">
       <time>18 December 2023</time>
       <h3>Building Bridges, Empowering Leaders: Talitha Kum International's Inspiring Training in Kenya</h3><p>From November 19th to 26th, 2023, Nairobi, Kenya became a vibrant hub of hope and purpose.</p>
