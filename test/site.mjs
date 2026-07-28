@@ -122,8 +122,8 @@ for (const name of PAGES) {
   check("impact counters count up to the real numbers", big.replace(/\D/g, "") === "121000", big);
 
   check("the four Ps are all on the page", (await page.locator(".tks-p").count()) === 4);
-  check("partners marquee is doubled for the loop",
-    (await page.locator(".tks-marq span").count()) === 24);
+  check("all twelve partner cards render",
+    (await page.locator(".tks-part").count()) === 12);
   await page.screenshot({ path: join(here, "shots", "site-home.png"), fullPage: true });
   await ctx.close();
 }

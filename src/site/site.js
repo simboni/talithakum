@@ -165,8 +165,4 @@
       });
   }
 
-  /* ---- partners marquee: duplicate once for the seamless loop ------------ */
-
-  var marq = $(".tks-marq");
-  if (marq) marq.innerHTML += marq.innerHTML;
 })();
