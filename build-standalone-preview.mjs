@@ -13,6 +13,7 @@
  */
 
 import { createServer } from "node:http";
+import { execSync } from "node:child_process";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,7 +60,7 @@ await new Promise((r) => server.listen(4181, r));
 /* ---- snapshot every page ------------------------------------------------- */
 
 const ROUTES = ["/", "/about-us/", "/vision-mission-and-values/", "/contacts/", "/donate/",
-  "/our-work/", "/news/", "/gallery/", "/publications/", "/videos/", "/our-team/",
+  "/our-work/", "/news/", "/gallery/", "/gallery/2/", "/publications/", "/videos/", "/our-team/",
   "/category/prayer/", "/category/protection/", "/category/prevention/", "/category/partnership-networking/",
   "/news/bakhita-day-marked-across-the-network/", "/news/human-trafficking-awareness-month/",
   "/news/training-of-trainers-with-border-police/"];
@@ -69,7 +70,7 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-await page.route(/cdnjs|ytimg|youtube|vimeo|unpkg|identity\.netlify/, (r) => r.abort());
+await page.route(/cdnjs|ytimg|youtube|vimeo|unpkg|identity\.netlify|fonts\.g/, (r) => r.abort());
 
 const SNAP = {};
 const cssBlocks = new Map();       // whole <style> blocks, deduped verbatim
@@ -128,7 +129,29 @@ const pages = ROUTES.map((r) =>
   `<div class="pv-page" data-page="${id(r)}" ${r === "/" ? "" : "hidden"}>${rewrite(SNAP[r])}</div>`).join("\n");
 
 const ascii = (s) => s.replace(/[^\x00-\x7F]/g, (c) => "&#" + c.codePointAt(0) + ";");
-const allCss = [...cssBlocks.values()].join("\n");
+
+/* The artifact sandbox blocks font CDNs, so the preview embeds the latin
+   subsets of the real faces as data URIs — the typography the live site
+   gets from Google Fonts, carried inside the file. */
+function fontCss() {
+  const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36';
+  const url = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Nunito+Sans:ital,wght@0,400..900;1,400..900&display=swap";
+  const css = execSync(`curl -s --max-time 30 -H "User-Agent: ${UA}" "${url}"`).toString();
+  const out = [];
+  const blocks = css.split("@font-face").slice(1);
+  for (const b of blocks) {
+    if (!/U\+0000-00FF/.test(b)) continue;              // latin subset only
+    const src = /url\((https:[^)]+\.woff2)\)/.exec(b);
+    if (!src) continue;
+    const woff = execSync(`curl -s --max-time 30 "${src[1]}" | base64 -w0`, { maxBuffer: 1 << 26 }).toString();
+    out.push("@font-face" + b.slice(0, b.indexOf("src:")) +
+      `src: url(data:font/woff2;base64,${woff}) format('woff2');\n}`);
+  }
+  return out.join("\n");
+}
+const embeddedFonts = fontCss();
+console.log(`embedded ${(embeddedFonts.length / 1024).toFixed(0)} KB of fonts`);
+const allCss = embeddedFonts + "\n" + [...cssBlocks.values()].join("\n");
 
 const html = `<title>Talitha Kum Kenya &#8212; standalone site preview</title>
 <style>

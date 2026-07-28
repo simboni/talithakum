@@ -81,7 +81,7 @@ async function open(path, opts) {
   const page = await ctx.newPage();
   /* Only pdf.js and video hosts are external; block them to prove the pages
      stand on their own. */
-  await page.route(/cdnjs|ytimg|youtube|vimeo|unpkg|identity\.netlify/, (r) => r.abort());
+  await page.route(/cdnjs|ytimg|youtube|vimeo|unpkg|identity\.netlify|fonts\.g/, (r) => r.abort());
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto(base + path, { waitUntil: "domcontentloaded" });
@@ -91,13 +91,28 @@ async function open(path, opts) {
 /* ---- every route renders with the chrome -------------------------------- */
 
 const ROUTES = ["/", "/about-us/", "/vision-mission-and-values/", "/contacts/", "/donate/",
-  "/news/", "/our-work/", "/gallery/", "/category/prayer/", "/terms/", "/privacy/", "/thanks/"];
+  "/news/", "/our-work/", "/gallery/", "/gallery/2/", "/category/prayer/", "/terms/", "/privacy/", "/thanks/"];
 for (const r of ROUTES) {
   const { ctx, page, errors } = await open(r);
   await page.waitForTimeout(300);
   check(`${r} renders with header and footer`,
     (await page.locator("#tks-head").count()) === 1 && (await page.locator(".tks-foot").count()) === 1);
   check(`${r} has no JS errors`, errors.length === 0, errors.slice(0, 2).join("|"));
+  await ctx.close();
+}
+
+/* ---- the gallery paginates ----------------------------------------------- */
+
+{
+  const { ctx, page } = await open("/gallery/");
+  const figures = await page.locator(".tks-gal figure").count();
+  check("gallery page 1 holds eight photos", figures === 8, `${figures} figures`);
+  const here = await page.locator(".tks-pgn .is-here").textContent();
+  check("gallery pagination marks the current page", here === "1", here);
+  await page.click(".tks-pgn a[rel=next]");
+  await page.waitForSelector(".tks-gal figure");
+  const rest = await page.locator(".tks-gal figure").count();
+  check("gallery pagination reaches page 2", page.url().includes("/gallery/2/") && rest === 1, `${page.url()} ${rest}`);
   await ctx.close();
 }
 
@@ -127,7 +142,7 @@ for (const r of ROUTES) {
   const { ctx, page } = await open("/our-team/");
   await page.waitForSelector(".tkteam-card", { timeout: 10000 });
   const cards = await page.locator(".tkteam-card").count();
-  check("team loads from the static API", cards === 7, `${cards} cards`);
+  check("team loads from the static API", cards === 8, `${cards} cards`);
   const first = await page.locator(".tkteam-role").first().textContent();
   check("display order holds on the static site", first === "Board Vice Chair", first);
   await ctx.close();

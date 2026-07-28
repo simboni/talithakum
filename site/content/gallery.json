@@ -1,0 +1,13 @@
+{
+  "photos": [
+    { "image": "/uploads/outreach.jpg", "caption": "Community outreach across the counties" },
+    { "image": "/uploads/hero-network.jpg", "caption": "The network gathered in session" },
+    { "image": "/uploads/tot-police.jpg", "caption": "Training of trainers with police officers" },
+    { "image": "/uploads/network-meeting.jpg", "caption": "A network planning meeting" },
+    { "image": "/uploads/novices.jpg", "caption": "Awareness session with novices" },
+    { "image": "/uploads/team-photo.jpg", "caption": "The Talitha Kum Kenya team" },
+    { "image": "/uploads/bakhita-day.jpg", "caption": "St Josephine Bakhita Day" },
+    { "image": "/uploads/ht-month.jpg", "caption": "Human trafficking awareness month" },
+    { "image": "/uploads/contact-hero.jpg", "caption": "A community workshop in progress" }
+  ]
+}

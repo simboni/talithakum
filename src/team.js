@@ -55,9 +55,8 @@
     seed: [
       { name: "Sr. Joyce Nyagucha", role: "Board Vice Chair", order: 20,
         photo: "sr-joyce-nyagucha-board-vice-chair.jpg" },
-      /* No photograph yet: the print supplied under this name is a second
-         copy of Sr. Matilda Baabuo's. Her card shows MG until it arrives. */
-      { name: "Sr. Mary Gitau", role: "Board Treasurer", order: 30, photo: "" },
+      { name: "Sr. Mary Gitau", role: "Board Treasurer", order: 30,
+        photo: "sr-mary-gitau-board-treasurer.jpg" },
       { name: "Sr. Catherine Mutindi", role: "Board Member", order: 50,
         photo: "sr-catherine-mutindi-board-member.jpg" },
       { name: "Sr. Matilda Baabuo", role: "Board Member", order: 50,
@@ -67,7 +66,9 @@
       { name: "Bro. Bernard Juma", role: "Board Member", order: 50,
         photo: "bro-bernard-juma-board-member.jpg" },
       { name: "Bildad Keke", role: "Board Member", order: 50,
-        photo: "bildadrd-keke-board-member.jpg" }
+        photo: "bildadrd-keke-board-member.jpg" },
+      { name: "Sr. Mercy Mwayi", role: "Director", group: "Staff", order: 10,
+        photo: "sr-mercy-mwayi-director.jpg" }
     ]
   };
 

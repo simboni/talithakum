@@ -106,3 +106,20 @@ collections:
       - { name: image, label: "Photo", widget: image, required: false }
       - { name: summary, label: "One-sentence summary", widget: text }
       - { name: body, label: "The story", widget: markdown }
+
+  - name: gallery
+    label: "Gallery"
+    files:
+      - name: gallery
+        label: "Photo gallery"
+        file: "site/content/gallery.json"
+        fields:
+          - name: photos
+            label: "Photos"
+            label_singular: "Photo"
+            widget: list
+            summary: "{{fields.caption}}"
+            hint: "Newest first — the first photo here is the first on the page. Eight photos per page; more photos add pages automatically."
+            fields:
+              - { name: image, label: "Image", widget: image }
+              - { name: caption, label: "Caption", widget: string, required: false }

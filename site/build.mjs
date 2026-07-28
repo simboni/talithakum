@@ -129,11 +129,21 @@ function shell({ title, desc, body, extraCss = "", extraJs = "", canonical = "" 
 <meta name="description" content="${esc(desc)}">
 ${canonical ? `<link rel="canonical" href="https://talithakumraht.org${canonical}">` : ""}
 <link rel="icon" href="/uploads/tik-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Nunito+Sans:ital,wght@0,400..900;1,400..900&display=swap">
+<meta name="theme-color" content="#221a14">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="/uploads/hero-network.jpg">
 <style>
-body { margin: 0; }
+/* Cross-document view transitions: page changes cross-fade in browsers
+   that support it, and are ordinary navigations everywhere else. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
+}
+body { margin: 0; background: #fffdfa; }
 ${css.trim()}
 ${extraCss}
 </style>
@@ -261,7 +271,7 @@ await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
 await page("/", shell({
-  title: "Talitha Kum Kenya — Religious Against Human Trafficking",
+  title: "Talitha Kum Kenya — Ending human trafficking in Kenya",
   desc: "A network of consecrated religious, lay women and men working to end human trafficking in Kenya since 2016.",
   canonical: "/", body: await frag("home"),
 }));
@@ -428,7 +438,7 @@ await page("/our-work/", shell({
   <section class="tks-sec"><div class="tks-wrap"><div class="tks-ps">
     ${Object.entries(CATS).map(([slug, name]) => `
       <article class="tks-p" data-reveal>
-        <h3>${esc(name.toUpperCase())}</h3>
+        <h3>${esc(name)}</h3>
         <p>${{
           Prayer: "Rooted in faith, we commit to uplifting both survivors and perpetrators through prayer.",
           Protection: "Comprehensive care: psychosocial support, medical aid and shelter for survivors.",
@@ -441,24 +451,44 @@ await page("/our-work/", shell({
   </div></div></section>`,
 }));
 
-/* Gallery: every image in uploads that is not a document cover or portrait. */
+/* Gallery: photos come from site/content/gallery.json (edited in the admin
+   panel), eight to a page; more photos grow into /gallery/2/, /gallery/3/… */
+const galleryRoutes = [];
 {
-  const shots = ["/uploads/hero-network.jpg", "/uploads/network-meeting.jpg", "/uploads/tot-police.jpg",
-    "/uploads/novices.jpg", "/uploads/outreach.jpg", "/uploads/team-photo.jpg", "/uploads/bakhita-day.jpg",
-    "/uploads/ht-month.jpg", "/uploads/contact-hero.jpg"];
-  await page("/gallery/", shell({
-    title: "Gallery — Talitha Kum Kenya",
-    desc: "Photographs from across the network.",
-    canonical: "/gallery/",
-    body: `<section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/outreach.jpg')"></div>
-      <div class="tks-wrap"><span class="tks-kicker">Gallery</span><h1>Photographs from across the network</h1>
-      <p>Workshops, trainings, commissioning days and the people who make the work happen.</p></div></section>
-    <section class="tks-sec"><div class="tks-wrap">
-      <div style="columns:3 280px;column-gap:16px">
-        ${shots.map((s) => `<img src="${s}" alt="" loading="lazy" data-reveal
-           style="width:100%;border-radius:10px;margin-bottom:16px;break-inside:avoid">`).join("")}
-      </div></div></section>`,
-  }));
+  const PER_PAGE = 8;
+  const photos = JSON.parse(await read(join(here, "content", "gallery.json")).catch(() => '{"photos":[]}')).photos || [];
+  const pages = [];
+  for (let i = 0; i < photos.length; i += PER_PAGE) pages.push(photos.slice(i, i + PER_PAGE));
+  if (!pages.length) pages.push([]);
+  const routeOf = (n) => (n === 1 ? "/gallery/" : `/gallery/${n}/`);
+  for (let n = 1; n <= pages.length; n++) {
+    const nav = pages.length < 2 ? "" : `
+      <nav class="tks-pgn" aria-label="Gallery pages">
+        ${n > 1 ? `<a class="tks-pgn-step" href="${routeOf(n - 1)}" rel="prev">&larr; Newer</a>` : ""}
+        ${pages.map((_, i) => i + 1 === n
+          ? `<span class="is-here" aria-current="page">${i + 1}</span>`
+          : `<a href="${routeOf(i + 1)}">${i + 1}</a>`).join("")}
+        ${n < pages.length ? `<a class="tks-pgn-step" href="${routeOf(n + 1)}" rel="next">Older &rarr;</a>` : ""}
+      </nav>`;
+    galleryRoutes.push(routeOf(n));
+    await page(routeOf(n), shell({
+      title: `Gallery${n > 1 ? ` — page ${n}` : ""} — Talitha Kum Kenya`,
+      desc: "Photographs from across the network.",
+      canonical: routeOf(n),
+      body: `<section class="tks-pagehead"><div class="tks-hbg" style="background-image:url('/uploads/outreach.jpg')"></div>
+        <div class="tks-wrap"><span class="tks-kicker">Gallery</span><h1>Photographs from across the network</h1>
+        <p>Workshops, trainings, commissioning days and the people who make the work happen.</p></div></section>
+      <section class="tks-sec"><div class="tks-wrap">
+        <div class="tks-gal">
+          ${pages[n - 1].map((p) => `<figure data-reveal>
+            <img src="${esc(p.image)}" alt="${esc(p.caption || "Photograph from the network")}" loading="lazy">
+            ${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ""}
+          </figure>`).join("")}
+        </div>
+        ${nav}
+      </div></section>`,
+    }));
+  }
 }
 
 for (const [route, title] of [["/terms/", "Terms of use"], ["/privacy/", "Privacy policy"]]) {
@@ -527,7 +557,7 @@ const redirects = `
 await writeFile(join(dist, "_redirects"), redirects.trim() + "\n", "utf8");
 
 const routes = ["/", "/about-us/", "/vision-mission-and-values/", "/contacts/", "/donate/",
-  "/publications/", "/videos/", "/our-team/", "/news/", "/our-work/", "/gallery/",
+  "/publications/", "/videos/", "/our-team/", "/news/", "/our-work/", ...galleryRoutes,
   ...Object.keys(CATS).map((c) => `/category/${c}/`),
   ...news.map((n) => `/news/${n.slug}/`)];
 await writeFile(join(dist, "sitemap.xml"),
