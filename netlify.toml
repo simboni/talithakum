@@ -1,0 +1,18 @@
+# Netlify configuration for the standalone Talitha Kum Kenya site.
+# Build: generate the static site from site/content/ into site/dist/.
+
+[build]
+  command = "node site/build.mjs"
+  publish = "site/dist"
+
+# Long cache for uploads (fingerprint-free but immutable in practice);
+# pages themselves revalidate so a deploy shows up immediately.
+[[headers]]
+  for = "/uploads/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "public, max-age=60"

@@ -1,0 +1,108 @@
+# Decap CMS — the staff admin panel at /admin.
+# Content is stored as JSON files in site/content/; uploads go to
+# site/static/uploads/. Every publish commits to the repository and Netlify
+# rebuilds the site, so a change is live in about a minute.
+
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "site/static/uploads"
+public_folder: "/uploads"
+
+site_url: "https://talithakumraht.org"
+logo_url: "/uploads/tik-logo.png"
+
+collections:
+  - name: publications
+    label: "Publications"
+    label_singular: "Publication"
+    folder: "site/content/publications"
+    extension: "json"
+    create: true
+    identifier_field: title
+    summary: "{{title}} — {{date}}"
+    sort_by: ["date"]
+    fields:
+      - { name: title, label: "Title", widget: string }
+      - { name: date, label: "Publication date", widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - name: type
+        label: "Type (exactly one)"
+        widget: select
+        options: ["Annual Report", "Policy Brief", "Research Report", "Training Manual", "Awareness Material", "Newsletter", "Case Study", "Prayer Resource"]
+      - name: themes
+        label: "Themes (one to three)"
+        widget: select
+        multiple: true
+        max: 3
+        options: ["Prevention", "Protection", "Partnership", "Prayer", "Child Trafficking", "Labour Exploitation", "Safe Migration", "Survivor Care", "Digital Safety", "Youth & Schools", "Advocacy", "Faith Formation"]
+      - { name: keywords, label: "Keywords", widget: list, required: false, hint: "Places, partners, target groups" }
+      - { name: summary, label: "Short summary", widget: text }
+      - { name: pdf, label: "PDF file", widget: file, hint: "The document itself" }
+      - { name: cover, label: "Cover image", widget: image, required: false }
+      - { name: pages, label: "Number of pages", widget: number, required: false, default: 0 }
+      - { name: lang, label: "Language", widget: select, options: [{ label: "English", value: "en" }, { label: "Kiswahili", value: "sw" }], default: "en" }
+      - { name: issuer, label: "Issuer", widget: string, default: "Talitha Kum Kenya" }
+      - { name: featured, label: "Feature this at the top", widget: boolean, default: false, required: false }
+
+  - name: videos
+    label: "Videos"
+    label_singular: "Video"
+    folder: "site/content/videos"
+    extension: "json"
+    create: true
+    identifier_field: title
+    summary: "{{title}} — {{date}}"
+    fields:
+      - { name: title, label: "Title", widget: string }
+      - { name: url, label: "Video link", widget: string, hint: "Paste the YouTube or Vimeo link — share links and Shorts all work" }
+      - { name: date, label: "Date", widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - name: type
+        label: "Type (exactly one)"
+        widget: select
+        options: ["Awareness Video", "Testimony", "Training", "Event Highlights", "Interview", "Prayer & Reflection", "Documentary", "Public Service Announcement"]
+      - name: themes
+        label: "Themes (one to three)"
+        widget: select
+        multiple: true
+        max: 3
+        options: ["Prevention", "Protection", "Partnership", "Prayer", "Child Trafficking", "Labour Exploitation", "Safe Migration", "Survivor Care", "Digital Safety", "Youth & Schools", "Advocacy", "Faith Formation"]
+      - { name: summary, label: "Short description", widget: text, required: false }
+      - { name: dur, label: "Length", widget: string, required: false, hint: "e.g. 4:32 — shown on the thumbnail" }
+      - { name: featured, label: "Feature this at the top", widget: boolean, default: false, required: false }
+
+  - name: team
+    label: "Team"
+    label_singular: "Person"
+    folder: "site/content/team"
+    extension: "json"
+    create: true
+    identifier_field: name
+    summary: "{{name}} — {{role}}"
+    fields:
+      - { name: name, label: "Full name", widget: string, hint: "Including Sr., Bro., Fr." }
+      - { name: role, label: "Designation", widget: string, hint: "e.g. Board Vice Chair" }
+      - { name: group, label: "Group", widget: select, options: ["Board", "Staff"], default: "Board" }
+      - { name: photo, label: "Photograph", widget: image, required: false, hint: "Portrait orientation works best. Without one the card shows initials." }
+      - { name: order, label: "Display order", widget: number, default: 50, hint: "Lower comes first: chair 10, vice chair 20, members 50" }
+      - { name: bio, label: "Short biography", widget: text, required: false, hint: "Only people with a biography are clickable on the page" }
+
+  - name: news
+    label: "News"
+    label_singular: "Story"
+    folder: "site/content/news"
+    extension: "json"
+    create: true
+    identifier_field: title
+    summary: "{{title}} — {{date}}"
+    fields:
+      - { name: title, label: "Headline", widget: string }
+      - { name: date, label: "Date", widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - name: category
+        label: "Which of the four Ps"
+        widget: select
+        required: false
+        options: ["Prayer", "Protection", "Prevention", "Partnership & Networking"]
+      - { name: image, label: "Photo", widget: image, required: false }
+      - { name: summary, label: "One-sentence summary", widget: text }
+      - { name: body, label: "The story", widget: markdown }

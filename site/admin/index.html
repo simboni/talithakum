@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — Talitha Kum Kenya</title>
+  <link rel="icon" href="/uploads/tik-logo.png">
+  <!-- Netlify Identity: email sign-in for staff, no GitHub accounts needed. -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body>
+  <!-- Decap CMS (the open-source successor of Netlify CMS). It reads and
+       writes the JSON files in site/content/ through Netlify's Git Gateway,
+       and every save triggers a rebuild and deploy of the site. -->
+  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    /* After accepting an email invite, land staff in the admin, signed in. */
+    if (window.netlifyIdentity) {
+      window.netlifyIdentity.on("init", function (user) {
+        if (!user) {
+          window.netlifyIdentity.on("login", function () {
+            document.location.href = "/admin/";
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>

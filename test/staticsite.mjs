@@ -1,0 +1,216 @@
+/**
+ * Drives the standalone static site in a real browser.
+ *
+ *   node staticsite.mjs        (from the test/ directory)
+ *
+ * Serves site/dist with a small server that implements the same query-based
+ * redirect rules Netlify will apply, so the publications, videos and team
+ * pages exercise the static WordPress-shaped API exactly as in production.
+ */
+
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { join, dirname, extname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const dist = join(here, "..", "site", "dist");
+
+/* Parse _redirects the way Netlify does: path, optional query filters,
+   target, status. */
+const rules = (await readFile(join(dist, "_redirects"), "utf8"))
+  .split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+  .map((l) => {
+    const parts = l.split(/\s+/);
+    const path = parts.shift();
+    const status = /^\d+$/.test(parts[parts.length - 1]) ? Number(parts.pop()) : 301;
+    const target = parts.pop();
+    const query = {};
+    for (const p of parts) { const [k, v] = p.split("="); query[k] = v; }
+    return { path, query, target, status };
+  });
+
+const MIME = { ".html": "text/html; charset=utf-8", ".json": "application/json", ".css": "text/css",
+  ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  ".pdf": "application/pdf", ".xml": "application/xml", ".txt": "text/plain" };
+
+const server = createServer(async (req, res) => {
+  const u = new URL(req.url, "http://x");
+  for (const r of rules) {
+    if (r.path !== u.pathname) continue;
+    const qok = Object.entries(r.query).every(([k, v]) => u.searchParams.get(k) === decodeURIComponent(v));
+    if (!qok) continue;
+    if (r.status === 200) {
+      const b = await readFile(join(dist, r.target.replace(/^\//, "")));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(b);
+    } else {
+      res.writeHead(r.status, { Location: r.target });
+      res.end();
+    }
+    return;
+  }
+  let p = u.pathname.replace(/^\//, "");
+  if (p === "" || p.endsWith("/")) p += "index.html";
+  try {
+    const b = await readFile(join(dist, p));
+    res.writeHead(200, { "Content-Type": MIME[extname(p)] || "application/octet-stream" });
+    res.end(b);
+  } catch {
+    const b = await readFile(join(dist, "404.html"));
+    res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(b);
+  }
+});
+await new Promise((r) => server.listen(4180, r));
+const base = "http://127.0.0.1:4180";
+
+const results = [];
+const check = (name, ok, detail = "") => {
+  results.push({ name, ok });
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail && !ok ? "  <- " + detail : ""}`);
+};
+
+const browser = await chromium.launch({
+  executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+});
+
+async function open(path, opts) {
+  const ctx = await browser.newContext(opts || { viewport: { width: 1360, height: 900 } });
+  const page = await ctx.newPage();
+  /* Only pdf.js and video hosts are external; block them to prove the pages
+     stand on their own. */
+  await page.route(/cdnjs|ytimg|youtube|vimeo|unpkg|identity\.netlify/, (r) => r.abort());
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.goto(base + path, { waitUntil: "domcontentloaded" });
+  return { ctx, page, errors };
+}
+
+/* ---- every route renders with the chrome -------------------------------- */
+
+const ROUTES = ["/", "/about-us/", "/vision-mission-and-values/", "/contacts/", "/donate/",
+  "/news/", "/our-work/", "/gallery/", "/category/prayer/", "/terms/", "/privacy/", "/thanks/"];
+for (const r of ROUTES) {
+  const { ctx, page, errors } = await open(r);
+  await page.waitForTimeout(300);
+  check(`${r} renders with header and footer`,
+    (await page.locator("#tks-head").count()) === 1 && (await page.locator(".tks-foot").count()) === 1);
+  check(`${r} has no JS errors`, errors.length === 0, errors.slice(0, 2).join("|"));
+  await ctx.close();
+}
+
+/* ---- the three app pages against the static API ------------------------- */
+
+{
+  const { ctx, page } = await open("/publications/");
+  await page.waitForSelector(".tkpub-card", { timeout: 10000 });
+  /* The newest/featured publication is promoted out of the grid into the
+     hero slot, so three documents render as one hero plus two cards. */
+  const cards = await page.locator(".tkpub-card").count();
+  const hero = await page.locator("[class*=tkpub-feat], .tkpub-hero").count();
+  check("publications load from the static API", cards + Math.min(hero, 1) === 3,
+    `${cards} cards + ${hero} hero`);
+  const admin = await page.locator("#tkpub-admin .tkpub-admin-bar, #tkpub-admin > *").count();
+  check("no staff panel on the static site", admin === 0, `${admin} nodes`);
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/videos/");
+  await page.waitForSelector(".tkvid-card", { timeout: 10000 });
+  const cards = await page.locator(".tkvid-card").count();
+  check("videos load from the static API", cards === 2, `${cards} cards`);
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/our-team/");
+  await page.waitForSelector(".tkteam-card", { timeout: 10000 });
+  const cards = await page.locator(".tkteam-card").count();
+  check("team loads from the static API", cards === 7, `${cards} cards`);
+  const first = await page.locator(".tkteam-role").first().textContent();
+  check("display order holds on the static site", first === "Board Vice Chair", first);
+  await ctx.close();
+}
+
+/* ---- homepage news from the static API ---------------------------------- */
+
+{
+  const { ctx, page } = await open("/");
+  await page.waitForTimeout(600);
+  const cards = await page.locator("#tks-news .tks-ncard").count();
+  check("homepage news is filled from the static API", cards === 3, `${cards} cards`);
+  const href = await page.locator("#tks-news .tks-ncard").first().getAttribute("href");
+  check("news cards link to the story pages", /^\/news\//.test(href || ""), href);
+  await ctx.close();
+}
+
+/* ---- old WordPress addresses redirect ----------------------------------- */
+
+{
+  const { ctx, page } = await open("/our-team-2/");
+  await page.waitForTimeout(400);
+  check("/our-team-2/ redirects to /our-team/", page.url().includes("/our-team/"), page.url());
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/blog-grid/");
+  check("/blog-grid/ redirects to /news/", page.url().includes("/news/"), page.url());
+  await ctx.close();
+}
+
+/* ---- a story page and a category page ----------------------------------- */
+
+{
+  const { ctx, page } = await open("/news/training-of-trainers-with-border-police/");
+  check("a story page renders its body",
+    (await page.locator(".tks-prose p").count()) >= 1 &&
+    (await page.locator("h1").textContent()).includes("Training of trainers"));
+  await ctx.close();
+}
+{
+  const { ctx, page } = await open("/category/protection/");
+  const n = await page.locator(".tks-ncard").count();
+  check("a category page lists its own stories", n === 1, `${n} cards`);
+  await ctx.close();
+}
+
+/* ---- contact form is a real Netlify form -------------------------------- */
+
+{
+  const { ctx, page } = await open("/contacts/");
+  check("the contact form is Netlify-wired",
+    (await page.locator('form[name="contact"][data-netlify="true"]').count()) === 1);
+  await ctx.close();
+}
+
+/* ---- 404 ------------------------------------------------------------------ */
+
+{
+  const { ctx, page } = await open("/no-such-page/");
+  check("unknown addresses get the 404 page",
+    (await page.locator("h1").textContent()).includes("could not be found"));
+  await ctx.close();
+}
+
+/* ---- phone ---------------------------------------------------------------- */
+
+{
+  const { ctx, page } = await open("/", {
+    viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3,
+  });
+  await page.waitForTimeout(400);
+  const over = await page.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  check("360x800: no horizontal overflow", over <= 1, `${over}px`);
+  await page.click("[data-drawer-open]");
+  await page.waitForTimeout(250);
+  check("360x800: the drawer opens", (await page.locator("#tks-drawer.is-open").count()) === 1);
+  await ctx.close();
+}
+
+await browser.close();
+server.close();
+const passed = results.filter((r) => r.ok).length;
+console.log(`\n${passed}/${results.length} checks passed`);
+process.exit(passed === results.length ? 0 : 1);
