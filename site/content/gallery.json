@@ -1,13 +1,128 @@
 {
   "photos": [
-    { "image": "/uploads/outreach.jpg", "caption": "Community outreach across the counties" },
-    { "image": "/uploads/hero-network.jpg", "caption": "The network gathered in session" },
-    { "image": "/uploads/tot-police.jpg", "caption": "Training of trainers with police officers" },
-    { "image": "/uploads/network-meeting.jpg", "caption": "A network planning meeting" },
-    { "image": "/uploads/novices.jpg", "caption": "Awareness session with novices" },
-    { "image": "/uploads/team-photo.jpg", "caption": "The Talitha Kum Kenya team" },
-    { "image": "/uploads/bakhita-day.jpg", "caption": "St Josephine Bakhita Day" },
-    { "image": "/uploads/ht-month.jpg", "caption": "Human trafficking awareness month" },
-    { "image": "/uploads/contact-hero.jpg", "caption": "A community workshop in progress" }
+    {
+      "image": "/uploads/gallery-2026-07-01.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-02.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-03.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-04.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-05.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-06.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-07.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-08.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-09.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-10.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-11.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-12.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-13.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-14.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-15.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-16.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-17.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-18.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-19.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-20.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-21.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/gallery-2026-07-22.jpg",
+      "caption": ""
+    },
+    {
+      "image": "/uploads/outreach.jpg",
+      "caption": "Community outreach across the counties"
+    },
+    {
+      "image": "/uploads/hero-network.jpg",
+      "caption": "The network gathered in session"
+    },
+    {
+      "image": "/uploads/tot-police.jpg",
+      "caption": "Training of trainers with police officers"
+    },
+    {
+      "image": "/uploads/network-meeting.jpg",
+      "caption": "A network planning meeting"
+    },
+    {
+      "image": "/uploads/novices.jpg",
+      "caption": "Awareness session with novices"
+    },
+    {
+      "image": "/uploads/team-photo.jpg",
+      "caption": "The Talitha Kum Kenya team"
+    },
+    {
+      "image": "/uploads/bakhita-day.jpg",
+      "caption": "St Josephine Bakhita Day"
+    },
+    {
+      "image": "/uploads/ht-month.jpg",
+      "caption": "Human trafficking awareness month"
+    },
+    {
+      "image": "/uploads/contact-hero.jpg",
+      "caption": "A community workshop in progress"
+    }
   ]
 }

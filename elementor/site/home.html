@@ -713,6 +713,17 @@ body.tks-locked { overflow: hidden; }
 @media print {
   .tks-top, .tks-head, .tks-drawer, .tks-foot, .tks-helpline { display: none !important; }
 }
+
+/* --- Footer social icons ----------------------------------------------------- */
+
+.tks-social { display: flex; gap: 10px; margin-top: 18px; }
+.tks-social a {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid rgba(255, 255, 255, .22); color: #e8dccb;
+  transition: background .2s, border-color .2s, color .2s, transform .2s;
+}
+.tks-social a:hover { background: var(--s-gold); border-color: var(--s-gold); color: #241811; transform: translateY(-2px); }
+.tks-social svg { width: 18px; height: 18px; }
 </style>
 
 <div class="tks">
@@ -1128,6 +1139,14 @@ body.tks-locked { overflow: hidden; }
       <p>Where shattered lives find hope, and resilience blossoms into freedom.
          A network of consecrated religious, lay women and men working to end
          human trafficking in Kenya since 2016.</p>
+      <div class="tks-social" aria-label="Follow us">
+        <a href="https://www.youtube.com/@TalithaKumKenya" target="_blank" rel="noopener" aria-label="YouTube">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.84.43A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.84-.43a2.5 2.5 0 0 0 1.76-1.77A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15.2V8.8L15.6 12z"/></svg></a>
+        <a href="https://www.facebook.com/profile.php?id=61583951584032" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.87.24-1.46 1.49-1.46h1.4V5.03A19 19 0 0 0 14.3 4.9c-2.28 0-3.85 1.4-3.85 3.95V11H8v3h2.45v7z"/></svg></a>
+        <a href="https://www.linkedin.com/in/talitha-kum-kenya-42329039a/" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.94 8.5H4.06V20h2.88zM5.5 4a1.72 1.72 0 1 0 0 3.44A1.72 1.72 0 0 0 5.5 4zM20 13.06c0-3.08-1.65-4.51-3.85-4.51a3.32 3.32 0 0 0-3 1.65h-.06L13 8.5h-2.76c.04.96 0 11.5 0 11.5h2.88v-6.42a2 2 0 0 1 .1-.7 1.58 1.58 0 0 1 1.48-1.05c1.04 0 1.46.79 1.46 1.96V20H19l1-.01z"/></svg></a>
+      </div>
     </div>
     <div>
       <h4>Our work</h4>

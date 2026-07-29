@@ -112,7 +112,7 @@ for (const r of ROUTES) {
   await page.click(".tks-pgn a[rel=next]");
   await page.waitForSelector(".tks-gal figure");
   const rest = await page.locator(".tks-gal figure").count();
-  check("gallery pagination reaches page 2", page.url().includes("/gallery/2/") && rest === 1, `${page.url()} ${rest}`);
+  check("gallery pagination reaches page 2", page.url().includes("/gallery/2/") && rest === 8, `${page.url()} ${rest}`);
   await ctx.close();
 }
 
@@ -157,6 +157,9 @@ for (const r of ROUTES) {
   check("homepage news is filled from the static API", cards === 3, `${cards} cards`);
   const href = await page.locator("#tks-news .tks-ncard").first().getAttribute("href");
   check("news cards link to the story pages", /^\/news\//.test(href || ""), href);
+  check("footer links the three social profiles",
+    (await page.locator(".tks-social a").count()) === 3 &&
+    (await page.locator('.tks-social a[aria-label="YouTube"]').getAttribute("href")).includes("@TalithaKumKenya"));
   await ctx.close();
 }
 
