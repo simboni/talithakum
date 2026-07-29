@@ -289,7 +289,7 @@ body.tks-locked { overflow: hidden; }
 }
 .tks-foot .tks-fgrid {
   position: relative; display: grid; grid-template-columns: 1.3fr 1fr 1fr 1.2fr; gap: 40px;
-  padding: 76px 0 56px;
+  padding-top: 76px; padding-bottom: 56px;
 }
 .tks-foot h4 {
   color: var(--s-gold); font-family: var(--s-font); font-size: 12px; font-weight: 800;
@@ -693,7 +693,7 @@ body.tks-locked { overflow: hidden; }
   .tks-news, .tks-res, .tks-vmv, .tks-ccards, .tks-bank { grid-template-columns: 1fr; }
   .tks-donate { grid-template-columns: 1fr; padding: 40px 26px; }
   .tks-top .is-help { margin-left: 0; }
-  .tks-foot .tks-fgrid { grid-template-columns: 1fr; gap: 32px; padding: 56px 0 40px; }
+  .tks-foot .tks-fgrid { grid-template-columns: 1fr; gap: 32px; padding-top: 56px; padding-bottom: 40px; }
   .tks-legal .tks-wrap { justify-content: center; text-align: center; }
   .tks-foot::after { font-size: 96px; bottom: 44px; }
 }
