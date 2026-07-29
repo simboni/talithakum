@@ -127,6 +127,14 @@
 .tks-top a:hover { color: #fff; }
 .tks-top svg { width: 14px; height: 14px; color: var(--s-gold); }
 .tks-top .is-help { margin-left: auto; font-weight: 800; color: var(--s-gold); letter-spacing: .01em; }
+.tks-top .tks-topsoc { display: flex; align-items: center; gap: 2px; margin-left: 12px; }
+.tks-top .tks-topsoc a {
+  width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; color: rgba(255, 250, 244, .75);
+  transition: background .2s, color .2s;
+}
+.tks-top .tks-topsoc a:hover { background: rgba(255, 255, 255, .12); color: var(--s-gold); }
+.tks-top .tks-topsoc svg { width: 15px; height: 15px; color: inherit; }
 
 .tks-head {
   position: sticky; top: 0; z-index: 1200;
@@ -672,6 +680,10 @@ body.tks-locked { overflow: hidden; }
 @media (max-width: 760px) {
   .tks-sec { padding: 64px 0; }
   .tks-top .is-addr { display: none; }
+  /* mobile top bar: the crisis helpline and the social icons, one tidy row —
+     the email lives in the footer and on the contacts page */
+  .tks-top a[href^="mailto:"] { display: none; }
+  .tks-top .tks-topsoc { margin-left: auto; }
   .tks-hero .tks-wrap { min-height: min(78svh, 640px); padding-top: 72px; padding-bottom: 64px; }
   .tks-story { grid-template-columns: 1fr; gap: 44px; }
   .tks-story .tks-simg { padding: 0; max-width: 420px; }

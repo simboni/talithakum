@@ -160,6 +160,8 @@ for (const r of ROUTES) {
   check("footer links the three social profiles",
     (await page.locator(".tks-social a").count()) === 3 &&
     (await page.locator('.tks-social a[aria-label="YouTube"]').getAttribute("href")).includes("@TalithaKumKenya"));
+  check("top bar links the three social profiles",
+    (await page.locator(".tks-topsoc a").count()) === 3);
   await ctx.close();
 }
 

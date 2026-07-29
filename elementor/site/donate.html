@@ -143,6 +143,14 @@
 .tks-top a:hover { color: #fff; }
 .tks-top svg { width: 14px; height: 14px; color: var(--s-gold); }
 .tks-top .is-help { margin-left: auto; font-weight: 800; color: var(--s-gold); letter-spacing: .01em; }
+.tks-top .tks-topsoc { display: flex; align-items: center; gap: 2px; margin-left: 12px; }
+.tks-top .tks-topsoc a {
+  width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; color: rgba(255, 250, 244, .75);
+  transition: background .2s, color .2s;
+}
+.tks-top .tks-topsoc a:hover { background: rgba(255, 255, 255, .12); color: var(--s-gold); }
+.tks-top .tks-topsoc svg { width: 15px; height: 15px; color: inherit; }
 
 .tks-head {
   position: sticky; top: 0; z-index: 1200;
@@ -688,6 +696,10 @@ body.tks-locked { overflow: hidden; }
 @media (max-width: 760px) {
   .tks-sec { padding: 64px 0; }
   .tks-top .is-addr { display: none; }
+  /* mobile top bar: the crisis helpline and the social icons, one tidy row —
+     the email lives in the footer and on the contacts page */
+  .tks-top a[href^="mailto:"] { display: none; }
+  .tks-top .tks-topsoc { margin-left: auto; }
   .tks-hero .tks-wrap { min-height: min(78svh, 640px); padding-top: 72px; padding-bottom: 64px; }
   .tks-story { grid-template-columns: 1fr; gap: 44px; }
   .tks-story .tks-simg { padding: 0; max-width: 420px; }
@@ -748,6 +760,14 @@ body.tks-locked { overflow: hidden; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.8a16 16 0 0 0 6.2 6.2l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2Z"/></svg>
       Toll-free helpline 0800&nbsp;724&nbsp;690
     </a>
+    <div class="tks-topsoc" aria-label="Follow us">
+      <a href="https://www.youtube.com/@TalithaKumKenya" target="_blank" rel="noopener" aria-label="YouTube">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.84.43A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.84-.43a2.5 2.5 0 0 0 1.76-1.77A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15.2V8.8L15.6 12z"/></svg></a>
+      <a href="https://www.facebook.com/profile.php?id=61583951584032" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.87.24-1.46 1.49-1.46h1.4V5.03A19 19 0 0 0 14.3 4.9c-2.28 0-3.85 1.4-3.85 3.95V11H8v3h2.45v7z"/></svg></a>
+      <a href="https://www.linkedin.com/in/talitha-kum-kenya-42329039a/" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.94 8.5H4.06V20h2.88zM5.5 4a1.72 1.72 0 1 0 0 3.44A1.72 1.72 0 0 0 5.5 4zM20 13.06c0-3.08-1.65-4.51-3.85-4.51a3.32 3.32 0 0 0-3 1.65h-.06L13 8.5h-2.76c.04.96 0 11.5 0 11.5h2.88v-6.42a2 2 0 0 1 .1-.7 1.58 1.58 0 0 1 1.48-1.05c1.04 0 1.46.79 1.46 1.96V20H19l1-.01z"/></svg></a>
+    </div>
   </div>
 </div>
 
