@@ -683,7 +683,9 @@ body.tks-locked { overflow: hidden; }
   /* mobile top bar: the crisis helpline and the social icons, one tidy row —
      the email lives in the footer and on the contacts page */
   .tks-top a[href^="mailto:"] { display: none; }
-  .tks-top .tks-topsoc { margin-left: auto; }
+  .tks-top .tks-wrap { flex-wrap: nowrap; justify-content: space-between; }
+  .tks-top .is-help { white-space: nowrap; }
+  .tks-top .tks-topsoc { margin-left: auto; flex-shrink: 0; }
   .tks-hero .tks-wrap { min-height: min(78svh, 640px); padding-top: 72px; padding-bottom: 64px; }
   .tks-story { grid-template-columns: 1fr; gap: 44px; }
   .tks-story .tks-simg { padding: 0; max-width: 420px; }
@@ -694,6 +696,11 @@ body.tks-locked { overflow: hidden; }
   .tks-foot .tks-fgrid { grid-template-columns: 1fr; gap: 32px; padding: 56px 0 40px; }
   .tks-legal .tks-wrap { justify-content: center; text-align: center; }
   .tks-foot::after { font-size: 96px; bottom: 44px; }
+}
+
+@media (max-width: 430px) {
+  /* keep the crisis number and the icons on one line — the words go, the number stays */
+  .tks-top .tks-hlabel { display: none; }
 }
 
 @media (max-width: 520px) {
