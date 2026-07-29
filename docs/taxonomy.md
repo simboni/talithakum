@@ -1,6 +1,6 @@
 # Publications Taxonomy
 
-How we describe and file every document Talitha Kum RAHT Kenya publishes on
+How we describe and file every document Talitha Kum Kenya publishes on
 talithakumraht.org.
 
 This guide exists so that two different people classifying the same document end
@@ -109,7 +109,7 @@ you already have is probably a keyword instead.
 | **Cover image** | Required | See section 8. If there is no designed cover, follow the fallback rule there. |
 | **PDF file** | Required | See section 7 for naming. |
 | **Publication date** | Required | The date on the document itself, not the date you uploaded it. If the document shows only a month, use the first day of that month. |
-| **Issuing body** | Required | Who published it. Default: `Talitha Kum RAHT Kenya`. Name co-publishers in full, e.g. `Talitha Kum RAHT Kenya and <partner name>`. |
+| **Issuing body** | Required | Who published it. Default: `Talitha Kum Kenya`. Name co-publishers in full, e.g. `Talitha Kum Kenya and <partner name>`. |
 | **Language** | Required | One of: English, Kiswahili, French. If the same document exists in two languages, upload it twice as two separate publications and cross-reference them in the summary. |
 | **Page count** | Optional | Helpful for readers on limited data. Count the PDF pages including the cover. |
 | **File size** | Optional | Usually filled in automatically at upload. If entering by hand, use MB to one decimal place, e.g. `2.4 MB`. |

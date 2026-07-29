@@ -100,7 +100,7 @@ function samplePdf(title, sub, pageCount) {
 
 const SAMPLES = [
   { t: "Annual Report 2025: Four Ps in Action", ty: "Annual Report", th: ["Prevention", "Partnership"], p: 6, f: true,
-    s: "A full year of RAHT Kenya's anti-trafficking work across member congregations, set against the four Ps. Covers awareness reach, survivor referrals, partnerships with county governments, and the network's priorities for the year ahead." },
+    s: "A full year of Talitha Kum Kenya's anti-trafficking work across member congregations, set against the four Ps. Covers awareness reach, survivor referrals, partnerships with county governments, and the network's priorities for the year ahead." },
   { t: "Recruitment Patterns on Social Media: A Field Scan", ty: "Research & Data", th: ["Prevention", "Digital Safety"], p: 5,
     s: "How recruiters approach young people through messaging apps and job pages, based on a scan of reported cases. Sets out the common scripts used, the platforms involved, and what parishes and schools can watch for." },
   { t: "Safe Migration Briefing for Parish Teams", ty: "Policy Brief", th: ["Safe Migration", "Advocacy"], p: 4,
@@ -130,7 +130,7 @@ async function main() {
   for (let i = 0; i < SAMPLES.length; i++) {
     const s = SAMPLES[i];
     const file = "sample-" + (i + 1) + ".pdf";
-    const buf = samplePdf(s.t, "Religious Against Human Trafficking - Kenya", s.p);
+    const buf = samplePdf(s.t, "Talitha Kum Kenya", s.p);
     await writeFile(join(out, file), buf);
     files.push(file);
 
@@ -152,7 +152,7 @@ async function main() {
             pages: s.p,
             size: buf.length,
             lang: s.lang || "en",
-            issuer: "RAHT Kenya",
+            issuer: "Talitha Kum Kenya",
             featured: !!s.f,
             date: d.toISOString().slice(0, 10),
           }) + "-->\n<p>" + s.s + "</p>",

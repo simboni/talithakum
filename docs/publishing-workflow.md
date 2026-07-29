@@ -79,7 +79,7 @@ note who and when.
 
 ### Step 3 — Edit and proofread
 
-Editor checks language, spelling, consistent naming (`Talitha Kum RAHT Kenya`,
+Editor checks language, spelling, consistent naming (`Talitha Kum Kenya`,
 spelled the same way every time), dates, figures against the source, and that
 every statistic in the document has a source stated. Someone other than the
 writer reads it once. Two pairs of eyes, always.

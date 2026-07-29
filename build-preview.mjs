@@ -41,7 +41,7 @@ const markup = markupRaw.replace(
 );
 
 /* ---------------------------------------------------------------- */
-/* Sample publications — illustrative, not real RAHT documents       */
+/* Sample publications — illustrative, not real documents       */
 /* ---------------------------------------------------------------- */
 
 const SAMPLES = [

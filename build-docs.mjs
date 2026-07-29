@@ -309,7 +309,7 @@ function cover({ photo, chip, title, standfirst, date, issuer }) {
   <div class="cover-inner">
     <div class="cover-top">
       <img src="${IMG.logo}" alt="">
-      <div class="cover-org">Talitha Kum Kenya<span>Religious Against Human Trafficking</span></div>
+      <div class="cover-org">Talitha Kum Kenya</div>
     </div>
     <div class="cover-body">
       <span class="chip">${chip}</span>
@@ -356,7 +356,7 @@ function backPage(source) {
     <img class="back-logo" src="${IMG.logo}" alt="">
     <div class="kicker">About us</div>
     <h2>More than just a cause, a calling</h2>
-    <p class="lead">In 2016, TIK&#8209;RAHT began in Kenya during the Jubilee Year of Mercy, initiated by a
+    <p class="lead">In 2016, Talitha Kum Kenya began during the Jubilee Year of Mercy, initiated by a
       collective effort of consecrated religious, lay women and men. Inspired by Pope Francis' call to
       embody acts of mercy, particularly the corporal works of mercy, the organisation focuses on
       reaching out to and assisting those who reside on the margins of society.</p>

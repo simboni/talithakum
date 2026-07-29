@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Talitha Kum RAHT Kenya — Publications repository (public front-end)
+   Talitha Kum Kenya — Publications repository (public front-end)
 
    Reads publications from the WordPress REST API and renders a filterable
    archive with an in-page PDF viewer. No build step, no dependencies.

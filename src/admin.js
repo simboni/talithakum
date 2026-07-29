@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Talitha Kum RAHT Kenya — Publications repository (admin panel)
+   Talitha Kum Kenya — Publications repository (admin panel)
 
    A front-end publishing form for staff, so nobody has to learn the
    WordPress admin to put a document online.

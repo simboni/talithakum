@@ -1,7 +1,7 @@
 # Talitha Kum Kenya — Publications Repository
 
 A public, searchable library of PDF documents for **talithakumraht.org**, the
-website of Religious Against Human Trafficking (RAHT) — Kenya.
+website of Talitha Kum Kenya.
 
 It does two things:
 
