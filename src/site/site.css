@@ -322,23 +322,27 @@ body.tks-locked { overflow: hidden; }
 
 .tks-hero { position: relative; color: #fff; overflow: hidden; background: var(--s-deep); }
 .tks-hero .tks-hbg {
-  position: absolute; inset: 0; background-size: cover; background-position: center 28%;
+  position: absolute; inset: 0; background-size: cover; background-position: center 70%;
 }
+/* Light touch: keep the photo bright and clear, and earn the headline's
+   contrast with a bottom scrim that stays out of people's faces. */
 .tks-hero .tks-hbg::after {
   content: ""; position: absolute; inset: 0;
   background:
-    var(--s-grain),
-    linear-gradient(160deg, rgba(26, 15, 8, .92) 8%, rgba(26, 15, 8, .55) 55%, rgba(26, 15, 8, .35) 100%);
-  background-blend-mode: overlay, normal;
+    linear-gradient(to top, rgba(26, 15, 8, .82) 0%, rgba(26, 15, 8, .52) 26%, rgba(26, 15, 8, .18) 52%, rgba(26, 15, 8, 0) 74%),
+    linear-gradient(100deg, rgba(26, 15, 8, .58) 0%, rgba(26, 15, 8, .30) 34%, rgba(26, 15, 8, 0) 62%);
 }
 .tks-hero .tks-wrap {
   position: relative; min-height: min(88svh, 780px);
   display: flex; flex-direction: column; justify-content: flex-end;
-  padding-top: 110px; padding-bottom: 96px;
+  padding-top: 110px; padding-bottom: 76px;
 }
 .tks-hero .tks-kicker { color: var(--s-gold); }
+.tks-hero .tks-kicker, .tks-hero h1, .tks-hero p {
+  text-shadow: 0 1px 2px rgba(20, 10, 4, .55), 0 10px 36px rgba(20, 10, 4, .38);
+}
 .tks-hero h1 {
-  color: #fff; font-size: clamp(40px, 6.6vw, 76px); max-width: 15ch;
+  color: #fff; font-size: clamp(40px, 6vw, 70px); max-width: 15ch;
   font-weight: 500; line-height: 1.04;
 }
 .tks-hero h1 em { color: var(--s-gold); }
@@ -424,8 +428,19 @@ body.tks-locked { overflow: hidden; }
   content: ""; position: absolute; inset: 0; background: var(--s-grain);
   opacity: .06; pointer-events: none;
 }
-.tks-impact .tks-ibg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .16; }
 .tks-impact .tks-wrap { position: relative; z-index: 1; }
+/* Numbers on the left, the Stop Human Trafficking artwork clear on the right */
+.tks-impact .tks-igrid {
+  display: grid; grid-template-columns: 1.3fr .9fr; gap: 44px 76px; align-items: center;
+}
+.tks-impact .tks-igrid .tks-sechead { margin-bottom: 0; }
+.tks-impact .tks-igrid .tks-nums { grid-template-columns: 1fr 1fr; gap: 44px 0; margin-top: 46px; }
+.tks-impact .tks-igrid .tks-num:nth-child(odd) { border-left: 0; padding-left: 0; }
+.tks-iart {
+  margin: 0; background: #fff; border-radius: 16px; padding: 30px 32px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .38);
+}
+.tks-iart img { display: block; width: 100%; height: auto; }
 .tks-impact .tks-h2 { color: #fff; font-weight: 500; }
 .tks-impact .tks-lede { color: rgba(255,250,244,.72); }
 .tks-impact .tks-kicker { color: var(--s-gold); }
@@ -686,7 +701,18 @@ body.tks-locked { overflow: hidden; }
   .tks-top .tks-wrap { flex-wrap: nowrap; justify-content: space-between; }
   .tks-top .is-help { white-space: nowrap; }
   .tks-top .tks-topsoc { margin-left: auto; flex-shrink: 0; }
-  .tks-hero .tks-wrap { min-height: min(78svh, 640px); padding-top: 72px; padding-bottom: 64px; }
+  /* Small screens: the photo gets its own clear block, and the text sits on
+     the solid deep panel below it — no fighting for contrast. */
+  .tks-hero .tks-hbg {
+    position: relative; inset: auto; height: min(46svh, 420px);
+    background-size: auto 132%; background-position: center 42%;
+  }
+  .tks-hero .tks-hbg::after {
+    background: linear-gradient(to top, var(--s-deep), rgba(34, 26, 20, 0) 26%);
+  }
+  .tks-hero .tks-wrap { min-height: 0; padding-top: 10px; padding-bottom: 56px; }
+  .tks-impact .tks-igrid { grid-template-columns: 1fr; gap: 48px; }
+  .tks-iart { width: 100%; max-width: 400px; margin: 0 auto; padding: 22px 24px; }
   .tks-story { grid-template-columns: 1fr; gap: 44px; }
   .tks-story .tks-simg { padding: 0; max-width: 420px; }
   .tks-story .tks-syear { left: 10px; bottom: 18px; }
