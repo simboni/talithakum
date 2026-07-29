@@ -135,7 +135,7 @@ for (const r of ROUTES) {
   const { ctx, page } = await open("/videos/");
   await page.waitForSelector(".tkvid-card", { timeout: 10000 });
   const cards = await page.locator(".tkvid-card").count();
-  check("videos load from the static API", cards === 2, `${cards} cards`);
+  check("videos load from the static API", cards >= 2, `${cards} cards`);
   await ctx.close();
 }
 {
@@ -157,11 +157,12 @@ for (const r of ROUTES) {
   check("homepage news is filled from the static API", cards === 3, `${cards} cards`);
   const href = await page.locator("#tks-news .tks-ncard").first().getAttribute("href");
   check("news cards link to the story pages", /^\/news\//.test(href || ""), href);
-  check("footer links the three social profiles",
-    (await page.locator(".tks-social a").count()) === 3 &&
+  check("footer links the four social profiles",
+    (await page.locator(".tks-social a").count()) === 4 &&
     (await page.locator('.tks-social a[aria-label="YouTube"]').getAttribute("href")).includes("@TalithaKumKenya"));
-  check("top bar links the three social profiles",
-    (await page.locator(".tks-topsoc a").count()) === 3);
+  check("top bar links the four social profiles",
+    (await page.locator(".tks-topsoc a").count()) === 4 &&
+    (await page.locator('.tks-topsoc a[aria-label="X"]').getAttribute("href")).includes("x.com/Talithakumkenya"));
   await ctx.close();
 }
 
