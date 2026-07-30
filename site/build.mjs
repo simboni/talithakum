@@ -286,10 +286,31 @@ const frag = async (n) => retarget(await S(join("pages", `${n}.html`)));
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
+/* The homepage "In pictures" strip: the newest photos from the gallery the
+   admin panel manages, so it refreshes with every gallery publish. */
+const galleryPhotos = JSON.parse(await read(join(here, "content", "gallery.json")).catch(() => '{"photos":[]}')).photos || [];
+const galleryStrip = galleryPhotos.length < 3 ? "" : `
+<section class="tks-sec">
+  <div class="tks-wrap">
+    <div class="tks-sechead is-split" data-reveal>
+      <div>
+        <span class="tks-kicker">In pictures</span>
+        <h2 class="tks-h2">Moments from across the network</h2>
+      </div>
+      <a class="tks-btn tks-btn-ghost" href="/gallery/">View the gallery</a>
+    </div>
+    <div class="tks-galstrip">
+      ${galleryPhotos.slice(0, 5).map((p) => `<a href="/gallery/" data-reveal>
+        <img src="${esc(p.image)}" alt="${esc(p.caption || "Photograph from the Talitha Kum Kenya network")}" loading="lazy"></a>`).join("")}
+    </div>
+  </div>
+</section>`;
+
 await page("/", shell({
   title: "Talitha Kum Kenya — Ending human trafficking in Kenya",
   desc: "A network of consecrated religious, lay women and men working to end human trafficking in Kenya since 2016.",
-  canonical: "/", body: await frag("home"), image: "/uploads/hero-home.jpg",
+  canonical: "/", image: "/uploads/hero-home.jpg",
+  body: (await frag("home")).replace(/<!-- gallery-strip:[\s\S]*?-->/, galleryStrip),
 }));
 await page("/about-us/", shell({
   title: "About us — Talitha Kum Kenya",
@@ -527,7 +548,7 @@ await page("/our-work/", shell({
 const galleryRoutes = [];
 {
   const PER_PAGE = 8;
-  const photos = JSON.parse(await read(join(here, "content", "gallery.json")).catch(() => '{"photos":[]}')).photos || [];
+  const photos = galleryPhotos;
   const pages = [];
   for (let i = 0; i < photos.length; i += PER_PAGE) pages.push(photos.slice(i, i + PER_PAGE));
   if (!pages.length) pages.push([]);

@@ -107,14 +107,20 @@ function cookieToken(req) {
 
 /* ---- content: local files, or the GitHub contents API -------------------- */
 
-const REPO = process.env.GITHUB_REPO || "";
-const BRANCH = process.env.GITHUB_BRANCH || "main";
+/* The env vars can override these, but the defaults match this deployment,
+   so the panel publishes correctly with only GITHUB_TOKEN configured. */
+const REPO = process.env.GITHUB_REPO || "simboni/talithakum";
+const BRANCH = process.env.GITHUB_BRANCH || process.env.HEAD || process.env.BRANCH || "claude/talithakum-repo-sug8lg";
 
 async function gh(path, init = {}) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token && init.method && init.method !== "GET") {
+    throw new Error("publishing is not configured — add GITHUB_TOKEN in Netlify (Site configuration → Environment variables), then redeploy");
+  }
   const r = await fetch(`https://api.github.com/repos/${REPO}/${path}`, {
     ...init,
     headers: {
-      authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
       accept: "application/vnd.github+json",
       "user-agent": "tk-admin",
       ...(init.headers || {}),
