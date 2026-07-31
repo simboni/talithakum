@@ -95,8 +95,10 @@ const ROUTE = {
 const MEDIA = {
   "/wp-content/uploads/2020/09/cropped-TIK-LOGO-192x192.png": ["/uploads/tik-logo.png", join(repo, "assets/site-src/images/TIK-LOGO.png")],
   "/wp-content/uploads/2024/02/DSC_0023-scaled.jpg": ["/uploads/hero-network.jpg", join(repo, "assets/site-src/images/DSC_0023-scaled-1170x935.jpg")],
-  /* Homepage hero — the Stop Human Trafficking campaign photo (2026). */
-  "/wp-content/uploads/2026/07/tkk-network-2026.jpg": ["/uploads/hero-home.jpg", join(repo, "assets/site-src/images/tkk-stop-campaign-2026.jpg")],
+  /* Homepage hero — the Stop Human Trafficking campaign photo (2026).
+     The filename must change whenever the photo does: /uploads/* is served
+     with a week-long browser cache, so reusing a name shows stale images. */
+  "/wp-content/uploads/2026/07/tkk-network-2026.jpg": ["/uploads/hero-stop-campaign.jpg", join(repo, "assets/site-src/images/tkk-stop-campaign-2026.jpg")],
   "/wp-content/uploads/2026/07/stop-human-trafficking.png": ["/uploads/stop-trafficking.png", join(repo, "assets/site-src/images/stop-human-trafficking.png")],
   "/wp-content/uploads/2023/12/DSC_0535.jpg": ["/uploads/network-meeting.jpg", join(repo, "assets/site-src/images/DSC_0535-1170x935.jpg")],
   "/wp-content/uploads/2023/12/ToT-police.jpg": ["/uploads/tot-police.jpg", join(repo, "assets/site-src/images/ToT-police.jpg")],
@@ -309,7 +311,7 @@ const galleryStrip = galleryPhotos.length < 3 ? "" : `
 await page("/", shell({
   title: "Talitha Kum Kenya — Ending human trafficking in Kenya",
   desc: "A network of consecrated religious, lay women and men working to end human trafficking in Kenya since 2016.",
-  canonical: "/", image: "/uploads/hero-home.jpg",
+  canonical: "/", image: "/uploads/hero-stop-campaign.jpg",
   body: (await frag("home")).replace(/<!-- gallery-strip:[\s\S]*?-->/, galleryStrip),
 }));
 await page("/about-us/", shell({
