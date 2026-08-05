@@ -142,7 +142,7 @@ for (const r of ROUTES) {
   const { ctx, page } = await open("/our-team/");
   await page.waitForSelector(".tkteam-card", { timeout: 10000 });
   const cards = await page.locator(".tkteam-card").count();
-  check("team loads from the static API", cards === 9, `${cards} cards`);
+  check("team loads from the static API", cards === 12, `${cards} cards`);
   const first = await page.locator(".tkteam-role").first().textContent();
   check("display order holds on the static site", first === "Executive Director", first);
   await ctx.close();
