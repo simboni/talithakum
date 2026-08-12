@@ -157,12 +157,14 @@ for (const r of ROUTES) {
   check("homepage news is filled from the static API", cards === 3, `${cards} cards`);
   const href = await page.locator("#tks-news .tks-ncard").first().getAttribute("href");
   check("news cards link to the story pages", /^\/news\//.test(href || ""), href);
-  check("footer links the four social profiles",
-    (await page.locator(".tks-social a").count()) === 4 &&
-    (await page.locator('.tks-social a[aria-label="YouTube"]').getAttribute("href")).includes("@TalithaKumKenya"));
-  check("top bar links the four social profiles",
-    (await page.locator(".tks-topsoc a").count()) === 4 &&
-    (await page.locator('.tks-topsoc a[aria-label="X"]').getAttribute("href")).includes("x.com/Talithakumkenya"));
+  check("footer links the five social profiles",
+    (await page.locator(".tks-social a").count()) === 5 &&
+    (await page.locator('.tks-social a[aria-label="YouTube"]').getAttribute("href")).includes("@TalithaKumKenya") &&
+    (await page.locator('.tks-social a[aria-label="TikTok"]').getAttribute("href")).includes("tiktok.com/@talitha.kum.kenya"));
+  check("top bar links the five social profiles",
+    (await page.locator(".tks-topsoc a").count()) === 5 &&
+    (await page.locator('.tks-topsoc a[aria-label="X"]').getAttribute("href")).includes("x.com/Talithakumkenya") &&
+    (await page.locator('.tks-topsoc a[aria-label="TikTok"]').getAttribute("href")).includes("tiktok.com/@talitha.kum.kenya"));
   await ctx.close();
 }
 
