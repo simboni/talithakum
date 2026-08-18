@@ -50,17 +50,32 @@ const server = createServer(async (req, res) => {
   }
   let p = u.pathname.replace(/^\//, "");
   if (p === "" || p.endsWith("/")) p += "index.html";
-  try {
+  /* Read first, then write the head: writing 200 before the read means a
+     missing file throws with the headers already sent, which kills the run. */
+  let body = null;
+  try { body = await readFile(join(dist, p)); } catch { /* falls through to 404 */ }
+  if (body) {
     res.writeHead(200, { "Content-Type": MIME[extname(p)] || "application/octet-stream" });
-    res.end(await readFile(join(dist, p)));
-  } catch { res.writeHead(404); res.end(); }
+    res.end(body);
+  } else { res.writeHead(404); res.end(); }
 });
 await new Promise((r) => server.listen(4181, r));
 
 /* ---- snapshot every page ------------------------------------------------- */
 
+/* Gallery pagination follows the photo count, so derive the routes rather than
+   hard-coding them — otherwise removing photos leaves a dead /gallery/N/. */
+const GALLERY_PER_PAGE = 8;
+const galleryCount = JSON.parse(
+  await readFile(join(here, "site", "content", "gallery.json"), "utf8").catch(() => '{"photos":[]}')
+).photos?.length || 0;
+const GALLERY_ROUTES = Array.from(
+  { length: Math.max(1, Math.ceil(galleryCount / GALLERY_PER_PAGE)) },
+  (_, i) => (i === 0 ? "/gallery/" : `/gallery/${i + 1}/`),
+);
+
 const ROUTES = ["/", "/about-us/", "/vision-mission-and-values/", "/contacts/", "/donate/",
-  "/our-work/", "/news/", "/gallery/", "/gallery/2/", "/publications/", "/videos/", "/our-team/",
+  "/our-work/", "/news/", ...GALLERY_ROUTES, "/publications/", "/videos/", "/our-team/",
   "/category/prayer/", "/category/protection/", "/category/prevention/", "/category/partnership-networking/",
   "/news/bakhita-day-marked-across-the-network/", "/news/human-trafficking-awareness-month/",
   "/news/training-of-trainers-with-border-police/"];
