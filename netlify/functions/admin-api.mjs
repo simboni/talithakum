@@ -22,7 +22,7 @@
  * users and content are then plain files under it and Blobs is never loaded.
  */
 
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 const LOCAL = process.env.TK_LOCAL_DIR || "";
 const SECRET = process.env.SESSION_SECRET || process.env.TK_SECRET || (LOCAL ? "local-test-secret" : "");
@@ -298,10 +298,13 @@ export default async function handler(req) {
         return json({ users: Object.values(users).map(publicUser) });
       }
       if (method === "POST") {
-        const { email, name, password, role, sections } = await req.json();
+        const { email, name, password, role, sections, update } = await req.json();
         const key = String(email || "").toLowerCase().trim();
         if (!key || !key.includes("@")) return bad("A valid email is required");
         const existing = users[key];
+        /* Adding someone who is already here used to overwrite their account
+           and reset their password, reported as "User created". */
+        if (existing && !update) return bad(`${existing.name} already has an account with that email. Open them from the list to make changes.`, 409);
         if (!existing && (!password || password.length < 8)) return bad("New users need a password of at least 8 characters");
         if (existing && existing.email === me.email && role && role !== "admin") return bad("You cannot demote yourself");
         users[key] = {
@@ -332,9 +335,14 @@ export default async function handler(req) {
       const ext = String(name || "").split(".").pop().toLowerCase();
       if (!UPLOAD_TYPES[ext]) return bad("Only images and PDFs can be uploaded");
       const base = slugify(String(name).replace(/\.[^.]+$/, ""));
-      const path = `${UPLOADS}/${base}.${ext === "jpeg" ? "jpg" : ext}`;
       const buf = Buffer.from(String(data), "base64");
       if (!buf.length) return bad("Empty file");
+      /* Phone cameras hand back the same filename over and over (IMG_0001).
+         Without the content hash a second upload overwrites the first, which
+         retroactively changes the photo on an already-published story — and
+         /uploads/* is cached for a week, so the wrong image sticks. */
+      const stamp = createHash("sha1").update(buf).digest("hex").slice(0, 8);
+      const path = `${UPLOADS}/${base}-${stamp}.${ext === "jpeg" ? "jpg" : ext}`;
       if (buf.length > 4.5 * 1024 * 1024) return bad("Files bigger than about 4 MB cannot go through the panel — email it to the site maintainer instead");
       await (await content(me)).writeBinary(path, buf);
       return json({ path: `/uploads/${path.split("/").pop()}` });
@@ -372,9 +380,33 @@ export default async function handler(req) {
           return raw ? json({ data: JSON.parse(raw) }) : bad("Not found", 404);
         }
         if (method === "PUT" && seg[2]) {
-          const { data } = await req.json();
+          const { data, create } = await req.json();
           if (!data || typeof data !== "object") return bad("Bad data");
-          await c.write(`${t.dir}/${safeSlug(seg[2])}.json`, JSON.stringify(data, null, 2) + "\n");
+          const file = `${t.dir}/${safeSlug(seg[2])}.json`;
+          const before = await c.read(file);
+
+          /* Creating must never land on top of something that already exists.
+             Two similar headlines slugify to the same name, and the write
+             below would silently replace the earlier item. */
+          if (create && before) {
+            return bad("Something with a very similar name already exists here. Change the title a little and try again.", 409);
+          }
+
+          /* Merge over what is on disk rather than replacing it. The panel
+             only sends the fields it knows about, so a whole-file write drops
+             anything else the file carries — including "slug". */
+          const prev = before ? JSON.parse(before) : {};
+          const merged = { ...prev, ...data };
+
+          /* Pin the public URL. build.mjs derives /news/<slug>/ from the title
+             unless the file carries a slug, so without this an edited headline
+             silently moves the page and every link already shared 404s. */
+          if (t.dir.endsWith("news") && !merged.slug) {
+            merged.slug = String(merged.title || "").toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+          }
+
+          await c.write(file, JSON.stringify(merged, null, 2) + "\n");
           return json({ ok: true });
         }
         if (method === "DELETE" && seg[2]) {

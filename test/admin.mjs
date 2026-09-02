@@ -114,19 +114,70 @@ check("publishing writes the story file", existsSync(storyFile));
 if (existsSync(storyFile)) {
   const story = JSON.parse(await readFile(storyFile, "utf8"));
   check("the story has the right fields", story.title === "Test Story From The Panel" && story.category === "Prevention" && story.body.includes("**Bold**"));
+  check("publishing pins the public web address", story.slug === "test-story-from-the-panel", story.slug);
 }
+
+/* -- a second story with a colliding headline must not replace the first --- */
+
+await page.click("[data-nav='news']");
+await page.waitForSelector("#newbtn");
+await page.click("#newbtn");
+await page.waitForSelector("#ef");
+await page.fill('[data-f="title"]', "Test Story From The Panel");
+await page.fill('[data-f="date"]', "2026-07-29");
+await page.fill('[data-f="summary"]', "A different story that happens to share a headline.");
+await page.fill('[data-f="body"]', "Should be refused.");
+await page.click("#ef button[type=submit]");
+await page.waitForSelector("#eerr.show, .toast.show");
+await page.waitForTimeout(400);
+const afterCollision = JSON.parse(await readFile(storyFile, "utf8"));
+check("a colliding headline does not overwrite the earlier story",
+  afterCollision.summary === "A story published by the automated test.", afterCollision.summary);
+
+/* -- renaming a headline must not move the page -------------------------- */
+
+await page.click("[data-nav='news']");
+await page.waitForSelector(".row");
+await page.click(".row");
+await page.waitForSelector("#ef");
+await page.fill('[data-f="title"]', "Test Story From The Panel (corrected)");
+await page.click("#ef button[type=submit]");
+await page.waitForSelector(".toast.show");
+await page.waitForTimeout(400);
+const renamed = JSON.parse(await readFile(storyFile, "utf8"));
+check("correcting a headline keeps the web address it was shared at",
+  renamed.title.endsWith("(corrected)") && renamed.slug === "test-story-from-the-panel", renamed.slug);
 
 /* -- image upload ---------------------------------------------------------- */
 
 await page.waitForSelector(".row");
 await page.click(".row"); /* newest by date = our story */
 await page.waitForSelector("#ef");
-check("editing reopens the story", (await page.locator('[data-f="title"]').inputValue()) === "Test Story From The Panel");
+check("editing reopens the story", (await page.locator('[data-f="title"]').inputValue()) === "Test Story From The Panel (corrected)");
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 await writeFile(join(work, "probe.png"), png);
 await page.setInputFiles('[data-pick="image"] input[type=file]', join(work, "probe.png"));
 await page.waitForFunction(() => document.querySelector('[data-pick="image"] [data-f]').value.startsWith("/uploads/"));
-check("image upload lands in /uploads/", existsSync(join(work, "site/static/uploads/probe.png")));
+/* The stored name carries a content hash, so assert on where the panel says
+   the file went rather than on a name we predict. */
+const uploaded = await page.inputValue('[data-pick="image"] [data-f]');
+check("image upload lands in /uploads/",
+  /^\/uploads\/probe-[0-9a-f]{8}\.png$/.test(uploaded) &&
+  existsSync(join(work, "site/static/uploads", uploaded.split("/").pop())), uploaded);
+
+/* Same file, same name, different bytes: the second upload must not land on
+   top of the first, or an already-published story silently changes photo. */
+const png2 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+await writeFile(join(work, "probe.png"), png2);
+await page.setInputFiles('[data-pick="image"] input[type=file]', join(work, "probe.png"));
+await page.waitForFunction((first) => {
+  const v = document.querySelector('[data-pick="image"] [data-f]').value;
+  return v.startsWith("/uploads/") && v !== first;
+}, uploaded);
+const uploaded2 = await page.inputValue('[data-pick="image"] [data-f]');
+check("a same-named upload does not overwrite the first",
+  uploaded2 !== uploaded && existsSync(join(work, "site/static/uploads", uploaded.split("/").pop())),
+  `${uploaded} then ${uploaded2}`);
 await page.click("#ef button[type=submit]");
 await page.waitForSelector(".toast.show");
 
@@ -135,7 +186,9 @@ await page.waitForSelector(".toast.show");
 await page.click("[data-nav='gallery']");
 await page.waitForSelector(".gitem");
 const before = await page.locator(".gitem").count();
-check("gallery loads the existing photos", before >= 9, `${before}`);
+/* Drive this from the real file so trimming the gallery does not fail a test */
+const galleryCount = JSON.parse(readFileSync(join(work, "site/content/gallery.json"), "utf8")).photos.length;
+check("gallery loads the existing photos", before === galleryCount, `${before} of ${galleryCount}`);
 await page.fill('[data-cap="0"]', "Captioned by the test");
 await page.click("#savegal");
 await page.waitForSelector(".toast.show");

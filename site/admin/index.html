@@ -148,11 +148,21 @@
       headers: { "content-type": "application/json" },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
       credentials: "same-origin",
+      cache: "no-store",          /* never let a stale list hide something just published */
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) {
-        if (!r.ok) throw new Error(d.error || ("Request failed (" + r.status + ")"));
+        if (!r.ok) {
+          /* Sessions last a week, so this happens. Without it the panel keeps
+             drawing signed-in screens and shows "Sign in first" inside a list
+             body, with no way back except knowing to reload. */
+          if (r.status === 401 && me) { me = null; renderAuth(); throw new Error("Your session has ended — please sign in again"); }
+          throw new Error(d.error || ("Request failed (" + r.status + ")"));
+        }
         return d;
       });
+    }, function () {
+      /* A dropped connection otherwise surfaces as "TypeError: Failed to fetch" */
+      throw new Error("Could not reach the server — check your connection and try again");
     });
   }
 
@@ -411,10 +421,23 @@
       };
       fileIn.onchange = function () {
         var file = fileIn.files[0];
-        if (!file) return;
-        if (file.size > 4.2 * 1024 * 1024) { toast("That file is bigger than 4 MB — please shrink it first"); return; }
+        /* Always release the input, whatever happens below. A file input that
+           still holds the last selection fires no change event when the same
+           file is picked again, so a rejected or retried upload looks dead. */
+        var release = function () { fileIn.value = ""; };
+        if (!file) { release(); return; }
+        if (file.size > 4.2 * 1024 * 1024) { toast("That file is bigger than 4 MB — please shrink it first"); release(); return; }
         var btn = p.querySelector(".pickbtn"); btn.disabled = true; btn.textContent = "Uploading…";
+        /* Publishing mid-upload used to save the item with an empty path */
+        var submit = p.closest("form") && p.closest("form").querySelector("button[type=submit]");
+        if (submit) submit.disabled = true;
+        var done = function (label) {
+          btn.textContent = label; btn.disabled = false;
+          if (submit) submit.disabled = false;
+          release();
+        };
         var rd = new FileReader();
+        rd.onerror = function () { done("Choose…"); toast("That file could not be read — try choosing it again"); };
         rd.onload = function () {
           api("upload", { method: "POST", body: { name: file.name, data: String(rd.result).split(",")[1] } })
             .then(function (d) {
@@ -422,11 +445,11 @@
               var img = p.querySelector("img"), ph = p.querySelector(".ph");
               if (/\.pdf$/i.test(d.path)) { if (ph) ph.textContent = "PDF ✓"; }
               else if (img) img.src = d.path;
-              else { if (ph) ph.remove(); p.insertAdjacentHTML("afterbegin", '<img src="' + d.path + '" alt="">'); }
-              btn.textContent = "Replace…"; btn.disabled = false;
+              else { if (ph) ph.remove(); p.insertAdjacentHTML("afterbegin", '<img src="' + d.path + '" alt="Currently selected">'); }
+              done("Replace…");
               toast("Uploaded", true);
             })
-            .catch(function (e) { btn.textContent = "Choose…"; btn.disabled = false; toast(e.message); });
+            .catch(function (e) { done("Choose…"); toast(e.message); });
         };
         rd.readAsDataURL(file);
       };
@@ -477,7 +500,7 @@
         var target = slug || slugify(out[S.idField]);
         var btn = form.querySelector("button[type=submit]");
         btn.disabled = true; btn.textContent = "Publishing…";
-        api("content/" + type + "/" + encodeURIComponent(target), { method: "PUT", body: { data: out } })
+        api("content/" + type + "/" + encodeURIComponent(target), { method: "PUT", body: { data: out, create: !slug } })
           .then(function () {
             toast("Published — live on the site in about a minute", true);
             location.hash = "#/" + type;
@@ -521,7 +544,9 @@
         b.onclick = function () { photos.splice(Number(b.getAttribute("data-rm")), 1); draw(); };
       });
     }
-    api("content/gallery").then(function (d) { photos = (d.data && d.data.photos) || []; draw(); });
+    api("content/gallery").then(function (d) { photos = (d.data && d.data.photos) || []; draw(); })
+      /* Without this the panel sits on "Loading…" for ever when the call fails */
+      .catch(function (err) { $("#gal").innerHTML = '<div class="empty" role="alert">' + esc(err.message) + "</div>"; });
     $("#addph").onclick = function () { $("#galfile").click(); };
     $("#galfile").onchange = function () {
       var files = Array.prototype.slice.call($("#galfile").files);
@@ -576,7 +601,9 @@
             form(u);
           };
         });
-      });
+      })
+        /* Same trap as the gallery: a failure left "Loading…" on screen for ever */
+        .catch(function (err) { listEl.innerHTML = '<div class="empty" role="alert">' + esc(err.message) + "</div>"; });
     }
     function form(u) {
       var isNew = !u;
@@ -605,9 +632,12 @@
         e.preventDefault();
         var f = e.target;
         var sections = Array.prototype.slice.call($("#usecs").querySelectorAll("input:checked")).map(function (i) { return i.value; });
-        api("users", { method: "POST", body: { name: f.name.value, email: f.email.value, password: f.password.value || undefined, role: f.role.value, sections: sections } })
+        $("#uerr").className = "err";                       /* clear any earlier failure */
+        var ub = f.querySelector("button[type=submit]");
+        ub.disabled = true;                                 /* a second click resent a now-stale password */
+        api("users", { method: "POST", body: { name: f.name.value, email: f.email.value, password: f.password.value || undefined, role: f.role.value, sections: sections, update: !isNew } })
           .then(function () { $("#uform").innerHTML = ""; load(); toast(isNew ? "User created — share their email and password with them" : "Saved", true); })
-          .catch(function (err) { var el = $("#uerr"); el.textContent = err.message; el.className = "err show"; });
+          .catch(function (err) { ub.disabled = false; var el = $("#uerr"); el.textContent = err.message; el.className = "err show"; });
       };
       $("#uform").scrollIntoView({ behavior: "smooth" });
     }
