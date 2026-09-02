@@ -28,3 +28,6 @@ assets/site-src/html/
 assets/site-src/css/
 assets/site-src/js/
 site/dist/
+
+# Root lockfile: local npm installs create this; the deploy uses npm install.
+package-lock.json
