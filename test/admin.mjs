@@ -72,6 +72,10 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || "/
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();
 await page.route(/fonts\.googleapis|gstatic/, (r) => r.abort());
+/* Registered up front, not just before the delete test: the panel now also
+   confirms before navigating away from unsaved edits, and Playwright dismisses
+   dialogs by default, which would silently block that navigation. */
+page.on("dialog", (d) => d.accept());
 
 /* -- first-run setup ------------------------------------------------------- */
 
@@ -93,7 +97,7 @@ check("admin sees every section plus Users",
 await page.click("[data-nav='team']");
 await page.waitForSelector(".row");
 check("team list is ordered by display order",
-  (await page.locator(".row b").first().textContent()) === "Sr. Mercy Mwayi");
+  (await page.locator(".row .name").first().textContent()) === "Sr. Mercy Mwayi");
 
 /* -- publish a story ------------------------------------------------------- */
 
@@ -147,6 +151,18 @@ await page.waitForTimeout(400);
 const renamed = JSON.parse(await readFile(storyFile, "utf8"));
 check("correcting a headline keeps the web address it was shared at",
   renamed.title.endsWith("(corrected)") && renamed.slug === "test-story-from-the-panel", renamed.slug);
+
+/* -- publishing confirms in place, rather than a toast you can miss ------- */
+
+check("publishing shows a confirmation that stays on screen",
+  (await page.locator(".done").count()) === 1 &&
+  (await page.locator(".done").textContent()).includes("live on the website"));
+check("the confirmation links to the published page",
+  (await page.locator('.done a[href^="/news/"]').count()) === 1);
+await page.click("#donelist");
+await page.waitForSelector(".row");
+check("the row it returns to is marked as just published",
+  (await page.locator(".row.is-new").count()) === 1);
 
 /* -- image upload ---------------------------------------------------------- */
 
@@ -243,7 +259,6 @@ await page.click("[data-nav='news']");
 await page.waitForSelector(".row");
 await page.click(".row");
 await page.waitForSelector("#delbtn");
-page.on("dialog", (d) => d.accept());
 await page.click("#delbtn");
 await page.waitForSelector(".toast.show");
 await page.waitForTimeout(300);

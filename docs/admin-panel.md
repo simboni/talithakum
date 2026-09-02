@@ -5,6 +5,10 @@
 News, Publications, Videos, Team and the Gallery. Every publish updates the
 live site in about a minute.
 
+> **Looking for how to actually use it?** This page is the technical setup.
+> For staff — how to sign in, publish, add photographs, reset a forgotten
+> password — see **[using-the-admin-panel.md](using-the-admin-panel.md)**.
+
 ## How it works
 
 - The panel (`site/admin/index.html`) talks to one serverless function
