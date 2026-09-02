@@ -9,7 +9,7 @@
  */
 
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -155,12 +155,26 @@ for (const r of ROUTES) {
   await ctx.close();
 }
 {
+  /* Derive both expectations from site/content/team so a roster change does
+     not need a matching edit here — only a real ordering bug should fail. */
+  const GROUPS = ["Board", "Staff"];          // the order team.js renders them in
+  const dir = join(dist, "..", "content", "team");
+  const people = await Promise.all(
+    (await readdir(dir)).filter((f) => f.endsWith(".json"))
+      .map(async (f) => JSON.parse(await readFile(join(dir, f), "utf8"))),
+  );
+  people.sort((a, b) =>
+    GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group) ||
+    a.order - b.order || a.name.localeCompare(b.name));
+
   const { ctx, page } = await open("/our-team/");
   await page.waitForSelector(".tkteam-card", { timeout: 10000 });
   const cards = await page.locator(".tkteam-card").count();
-  check("team loads from the static API", cards === 13, `${cards} cards`);
+  check("team loads from the static API", cards === people.length,
+    `${cards} cards, expected ${people.length}`);
   const first = await page.locator(".tkteam-role").first().textContent();
-  check("display order holds on the static site", first === "Executive Director", first);
+  check("display order holds on the static site", first === people[0].role,
+    `${first}, expected ${people[0].role}`);
   await ctx.close();
 }
 

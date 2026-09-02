@@ -1,8 +1,8 @@
 {
   "name": "Sr. Mary Gitau",
-  "role": "Treasurer",
-  "group": "Staff",
-  "order": 15,
-  "photo": "/uploads/sr-mary-gitau-treasurer.jpg",
+  "role": "Board Treasurer",
+  "group": "Board",
+  "order": 30,
+  "photo": "/uploads/sr-mary-gitau-board-treasurer.jpg",
   "bio": ""
 }
