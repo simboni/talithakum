@@ -263,8 +263,17 @@
     margin: var(--sp-5) calc(-1 * clamp(20px, 3vw, 32px)) calc(-1 * clamp(20px, 3vw, 32px));
     padding: 16px clamp(20px, 3vw, 32px) calc(16px + env(safe-area-inset-bottom, 0px));
     background: var(--s-surface); border-top: 1px solid var(--s-line);
+    /* Without a lift the bar reads as a divider partway down the form, so the
+       fields below it look like a different, finished section. */
+    box-shadow: 0 -10px 22px -14px rgba(34, 26, 20, .55);
     border-radius: 0 0 var(--r-md) var(--r-md); }
   .bar .grow { flex: 1 1 auto; }
+
+  .dz { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+    margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--s-line); }
+  .dz .grow { flex: 1 1 240px; }
+  .dz b { display: block; font-size: 15px; color: var(--s-ink); }
+  .dz span { font-size: 14px; color: var(--a-muted); }
 
   .err { display: none; background: var(--a-danger-soft); border: 1.5px solid var(--a-danger-line);
     color: var(--a-danger); border-radius: var(--r-sm); padding: 12px 15px; margin-bottom: var(--sp-4);
@@ -279,6 +288,9 @@
 
   /* ---------------------------------------------------------------- gallery */
   .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-4); }
+  /* Loading, empty and error states are one child of the grid: without this
+     they sit squeezed into a single 240px column. */
+  .gal > .state, .gal > .rows { grid-column: 1 / -1; }
   .gitem { background: var(--s-surface); border: 1px solid var(--s-line); border-radius: var(--r-md); overflow: hidden; }
   .gitem:focus-within { box-shadow: var(--focus-light); }
   .gitem img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: var(--s-gold-soft); }
@@ -330,8 +342,26 @@
     .topbar select option { color: #111; }
     .topbar .more { flex: none; min-height: 44px; min-width: 44px; border-radius: var(--r-sm);
       border: 1.5px solid rgba(255,255,255,.2); background: rgba(255,255,255,.12); color: #fff; font-size: 18px; }
+    .more-wrap { position: relative; flex: none; }
+    .moremenu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 210px;
+      padding: 5px; background: var(--s-surface); border: 1px solid var(--s-line);
+      border-radius: var(--r-sm); box-shadow: var(--sh-2); }
+    .moremenu[hidden] { display: none; }
+    .moremenu button { display: block; width: 100%; text-align: left; min-height: 44px; padding: 0 12px;
+      border: 0; border-radius: 8px; background: none; color: var(--s-ink);
+      font: inherit; font-size: 15px; font-weight: 700; }
+    .moremenu button:hover { background: var(--s-canvas); }
+    .moremenu button:focus-visible { outline: none; box-shadow: var(--focus-light); }
     .main { padding: var(--sp-5) var(--sp-4) 80px; }
     .grid2 { grid-template-columns: 1fr; gap: var(--sp-4); }
+    /* Stacked as tall cards these five took nearly a thousand pixels of
+       scrolling to get past. On a phone the home screen is a menu, so lay
+       them out as one tappable row each. */
+    .tiles { gap: var(--sp-3); margin-bottom: var(--sp-6); }
+    .tile { flex-direction: row; align-items: center; gap: var(--sp-3); padding: 13px 16px; }
+    .tile .ico { flex: none; width: 38px; height: 38px; margin-bottom: 0; }
+    .tile b { flex: 1 1 auto; font-size: 17px; }
+    .tile > span:last-child { flex: none; }
     .toast { top: auto; left: 12px; right: 12px; max-width: none;
       bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateY(16px); }
     .toast.show { transform: translateY(0); }
@@ -339,7 +369,7 @@
 
   @media (max-width: 520px) {
     .bar .btn { flex: 1 1 auto; }
-    .bar .btn.danger { order: 9; flex-basis: 100%; margin-top: var(--sp-2); }
+    .dz .btn { flex: 1 1 100%; }
     .gal { grid-template-columns: 1fr; }
     .row .thumb { width: 56px; height: 44px; }
   }
@@ -626,7 +656,13 @@
           (me.role === "admin" ? '<option value="users"' + (active === "users" ? " selected" : "") + ">Users</option>" : "") +
           '<option value="account"' + (active === "account" ? " selected" : "") + ">My account</option>" +
         "</select>" +
-        '<button class="more" id="mobilemore" type="button" aria-label="More">⋯</button>' +
+        '<div class="more-wrap">' +
+          '<button class="more" id="mobilemore" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options">⋯</button>' +
+          '<div class="moremenu" id="moremenu" hidden>' +
+            '<button type="button" id="mviewsite">View the live site</button>' +
+            '<button type="button" id="mlogout">Sign out</button>' +
+          "</div>" +
+        "</div>" +
       "</div>" +
       '<div class="shell"><nav class="side" aria-label="Sections">' +
         '<div class="brand"><img src="/uploads/tik-logo.png" alt=""><div><b>Talitha Kum</b><span>Admin panel</span></div></div>' +
@@ -656,10 +692,21 @@
       if (!leaving()) { sel.value = active || "home"; return; }
       go(sel.value === "home" ? "#/" : "#/" + sel.value);
     };
-    var more = $("#mobilemore");
-    if (more) more.onclick = function () {
-      if (confirm("Sign out of the admin panel?")) $("#logout").click();
-    };
+    /* This button said "More" and did exactly one thing: ask whether you
+       wanted to sign out. On a phone it was also the only thing here, so
+       there was no way to open the live site except from Home. */
+    var more = $("#mobilemore"), moreMenu = $("#moremenu");
+    if (more && moreMenu) {
+      var closeMore = function () { moreMenu.hidden = true; more.setAttribute("aria-expanded", "false"); };
+      more.onclick = function (e) {
+        e.stopPropagation();
+        moreMenu.hidden = !moreMenu.hidden;
+        more.setAttribute("aria-expanded", moreMenu.hidden ? "false" : "true");
+      };
+      moreMenu.onclick = function (e) { e.stopPropagation(); };
+      $("#mviewsite").onclick = function () { closeMore(); $("#viewsite").click(); };
+      $("#mlogout").onclick = function () { closeMore(); $("#logout").click(); };
+    }
     $("#viewsite").onclick = function () { window.open("/", "_blank", "noopener"); };
     $("#logout").onclick = function () {
       if (!leaving()) return;
@@ -1002,9 +1049,15 @@
         isNew ? "New " + S.single : (data[S.idField] || "Edit"),
         isNew ? null : "Changes go live on the website about a minute after you publish.") +
         '<form class="panel" id="ef" novalidate><div class="err" id="eerr" role="alert"></div>' + body +
+        /* Delete used to share the sticky bar with Publish. On a phone that
+           made the bar two rows deep — a fifth of the screen — and put the
+           destructive button directly under the one people press every time. */
+        (isNew ? "" :
+          '<div class="dz"><div class="grow"><b>Delete this ' + esc(S.single) + "</b>" +
+          "<span>It disappears from the website about a minute later. This cannot be undone.</span></div>" +
+          '<button class="btn danger" type="button" id="delbtn">Delete</button></div>') +
         '<div class="bar"><button class="btn primary" type="submit">Publish</button>' +
-        '<button class="btn" type="button" id="backbtn">Cancel</button><span class="grow"></span>' +
-        (isNew ? "" : '<button class="btn danger" type="button" id="delbtn">Delete</button>') +
+        '<button class="btn" type="button" id="backbtn">Cancel</button>' +
         "</div></form>", type);
 
       var form = $("#ef");
@@ -1115,7 +1168,7 @@
       "Photographs shown on the Gallery page. The newest also appear on the homepage.",
       '<button class="btn" id="addph">+ Add photos</button>' +
       '<input type="file" id="galfile" class="vh" accept="image/*" multiple>') +
-      '<div class="countline" id="galcount"></div><div id="gal">' + skeletons(2) + "</div>" +
+      '<div class="countline" id="galcount"></div><div id="gal" class="gal">' + skeletons(2) + "</div>" +
       '<div class="bar" style="position:static;margin-top:24px;border-radius:14px;border:1px solid var(--s-line)">' +
       '<button class="btn primary" id="savegal">Publish gallery</button>' +
       '<span class="hint" style="margin:0">Adding, reordering and captioning only take effect once you publish.</span></div>', "gallery");
@@ -1370,6 +1423,16 @@
   }
 
   window.addEventListener("hashchange", route);
+
+  /* Bound once, not inside shell(): shell() replaces the whole page on every
+     navigation, so re-binding there would pile up a listener per screen. */
+  function closeMoreMenu() {
+    var m = $("#moremenu"), b = $("#mobilemore");
+    if (m) m.hidden = true;
+    if (b) b.setAttribute("aria-expanded", "false");
+  }
+  document.addEventListener("click", closeMoreMenu);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMoreMenu(); });
 
   /* status answers both questions in one call — whether an account exists at
      all, and whether this browser still has a valid session. */

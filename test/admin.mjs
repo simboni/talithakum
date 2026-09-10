@@ -205,6 +205,18 @@ const before = await page.locator(".gitem").count();
 /* Drive this from the real file so trimming the gallery does not fail a test */
 const galleryCount = JSON.parse(readFileSync(join(work, "site/content/gallery.json"), "utf8")).photos.length;
 check("gallery loads the existing photos", before === galleryCount, `${before} of ${galleryCount}`);
+
+/* The grid styles were there all along but the container was never given the
+   class, so every photo took a full-width row and eight of them made a page
+   seven thousand pixels tall. Nothing else in this file would have noticed. */
+const galGrid = await page.evaluate(() => {
+  const g = document.getElementById("gal");
+  const cs = getComputedStyle(g);
+  return { display: cs.display, columns: cs.gridTemplateColumns.split(" ").length };
+});
+check("the gallery lays photos out as a grid", galGrid.display === "grid", galGrid.display);
+check("the gallery shows several photos per row", galGrid.columns >= 3, `${galGrid.columns} column(s)`);
+
 await page.fill('[data-cap="0"]', "Captioned by the test");
 await page.click("#savegal");
 await page.waitForSelector(".toast.show");
