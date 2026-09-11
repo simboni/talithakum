@@ -306,6 +306,20 @@ await page.waitForSelector(".toast.show");
 await page.waitForTimeout(300);
 check("editors can delete within their sections", !existsSync(storyFile));
 
+/* -- a misconfigured deployment says which variable is missing ------------- */
+
+/* The panel swallowed the error and always blamed the network, so the one
+   screen an administrator sees when the deployment is half-configured told
+   them nothing they could act on. */
+await page.route("**/api/admin/status", (r) =>
+  r.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "sign-in is not configured — add SESSION_SECRET in Netlify" }) }));
+await page.goto(`${base}/admin`, { waitUntil: "domcontentloaded" });
+await page.waitForSelector("#retry");
+check("an unavailable panel names the missing setting",
+  (await page.locator(".auth-card .sub").textContent()).includes("SESSION_SECRET"),
+  await page.locator(".auth-card .sub").textContent());
+await page.unroute("**/api/admin/status");
+
 /* -- refuses to run unconfigured ------------------------------------------- */
 
 /* An unset SESSION_SECRET did not stop anything: the session cookie was still

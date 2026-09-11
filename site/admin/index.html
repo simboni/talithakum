@@ -632,9 +632,13 @@
           });
       };
       $("#af [name=" + (first ? "name" : "email") + "]").focus();
-    }).catch(function () {
+    }).catch(function (err) {
+      /* The error was discarded here, so every failure read as "the service
+         did not answer" — a deployment missing SESSION_SECRET, which the API
+         names exactly, looked the same as the site being down. */
+      var msg = (err && err.message) || "The admin service did not answer.";
       app.innerHTML = '<div class="auth"><div class="auth-card"><h1>Panel unavailable</h1>' +
-        '<p class="sub">The website is reachable but the admin service did not answer.</p>' +
+        '<p class="sub">' + esc(msg) + "</p>" +
         '<button class="btn primary" id="retry" type="button">Try again</button></div></div>';
       $("#retry").onclick = renderAuth;
     });
