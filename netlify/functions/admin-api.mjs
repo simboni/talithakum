@@ -230,6 +230,14 @@ export default async function handler(req) {
   const url = new URL(req.url);
   const seg = url.pathname.replace(/^\/api\/admin\/?/, "").split("/").filter(Boolean);
   const method = req.method;
+
+  /* Without SESSION_SECRET the cookie was still signed — with an empty key,
+     which anybody can reproduce. That is a forgeable administrator session,
+     so refuse to serve at all rather than appear to be working. */
+  if (!LOCAL && !SECRET) {
+    return bad("sign-in is not configured — add SESSION_SECRET in Netlify (Site configuration → Environment variables), then redeploy", 503);
+  }
+
   const store = await userStore();
   const users = (await store.get()) || {};
   const hasUsers = Object.keys(users).length > 0;

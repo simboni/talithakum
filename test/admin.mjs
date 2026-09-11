@@ -306,6 +306,34 @@ await page.waitForSelector(".toast.show");
 await page.waitForTimeout(300);
 check("editors can delete within their sections", !existsSync(storyFile));
 
+/* -- refuses to run unconfigured ------------------------------------------- */
+
+/* An unset SESSION_SECRET did not stop anything: the session cookie was still
+   signed, with an empty key that anyone can reproduce, so a forged cookie was
+   a valid administrator. A fresh import picks the env up again. */
+{
+  const savedLocal = process.env.TK_LOCAL_DIR;
+  const savedSecret = process.env.SESSION_SECRET;
+  process.env.TK_LOCAL_DIR = "";
+  delete process.env.SESSION_SECRET;
+  delete process.env.TK_SECRET;
+  const { default: unconfigured } = await import("../netlify/functions/admin-api.mjs?no-secret");
+  /* Without the guard this reaches the Blobs client and throws, which would
+     end the run on an error about storage rather than about the secret. */
+  let status = 0, error = "";
+  try {
+    const res = await unconfigured(new Request("http://example.org/api/admin/status"));
+    status = res.status;
+    error = (await res.json().catch(() => ({}))).error || "";
+  } catch (e) {
+    error = `threw instead of refusing: ${e.message}`;
+  }
+  check("the API refuses to serve without SESSION_SECRET",
+    status === 503 && /SESSION_SECRET/.test(error), `${status} ${error}`);
+  process.env.TK_LOCAL_DIR = savedLocal;
+  if (savedSecret) process.env.SESSION_SECRET = savedSecret;
+}
+
 await browser.close();
 server.close();
 console.log(`\n${passed}/${passed + failed} checks passed`);
