@@ -24,12 +24,35 @@ website; they are not your Gmail, and not the Talitha Kum email account.
 > the first account instead of signing in. Whoever does this becomes the
 > administrator. This happens once, for the whole organisation.
 
+### Which email address?
+
+The one an administrator created for you **on this panel**. It is not your
+Gmail, and it is not the Talitha Kum email account — those are separate
+things that happen to use the same address in some cases.
+
+If nobody has ever created an account for you, there is nothing to sign in
+with. Ask an administrator to add you from the **Users** screen. The panel
+cannot send email, so they will have to tell you the password themselves.
+
 ### If it says your password is wrong
 
 Try again carefully — passwords are case-sensitive. If it still refuses, ask
-the administrator (whoever set up the panel) to set a new password for you
-from the **Users** screen. There is no self-service password reset, and no
-"forgot password" email.
+an administrator to set a new password for you from the **Users** screen.
+There is no self-service password reset, and no "forgot password" email.
+
+### If the administrator is the one who is locked out
+
+This is the one situation the panel cannot fix by itself. Only an
+administrator can reset a password, so if the **only** administrator forgets
+theirs, there is nobody left who can help.
+
+Recovering means clearing every account by hand so the panel offers
+first-time setup again — a technical job for whoever maintains the website
+(the procedure is in [admin-panel.md](admin-panel.md)). No content is lost,
+but every account has to be created again.
+
+**So do not run with a single administrator.** Add a second one you trust.
+The Users screen warns you while there is only one.
 
 ### If you see "Your session has ended"
 

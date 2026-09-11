@@ -95,7 +95,10 @@
   .auth-card p.sub { color: var(--a-muted); font-size: 15px; margin-bottom: var(--sp-5); }
   .auth-card .btn { width: 100%; margin-top: var(--sp-2); }
   .auth-note { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--s-line-soft);
-    font-size: 14px; color: var(--a-muted); }
+    font-size: 14px; color: var(--a-muted); text-align: left; }
+  .auth-note p { margin-bottom: 10px; line-height: 1.5; }
+  .auth-note p:last-child { margin-bottom: 0; }
+  .auth-note b { color: var(--s-ink); }
 
   /* ------------------------------------------------------------------ shell */
   .shell { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100dvh; }
@@ -600,7 +603,16 @@
         '<label class="f" style="margin-bottom:16px"><span class="lbl">Email</span><input class="in" name="email" type="email" required autocomplete="username"></label>' +
         '<label class="f" style="margin-bottom:16px"><span class="lbl">Password</span><input class="in" name="password" type="password" required autocomplete="' + (first ? "new-password" : "current-password") + '" minlength="8"></label>' +
         '<button class="btn primary" type="submit">' + (first ? "Create account" : "Sign in") + "</button>" +
-        (first ? "" : '<p class="auth-note">Forgotten your password? The website administrator can set a new one for you from the Users screen.</p>') +
+        /* "Sign in" with nothing else said left people guessing which of their
+           addresses this wanted, and the old note sent the administrator to
+           ask the administrator. */
+        (first ? "" : '<div class="auth-note">' +
+          "<p><b>Which email?</b> The one an administrator set up for you here. " +
+          "It is not your Gmail, and not the Talitha Kum email account.</p>" +
+          "<p><b>Forgotten your password?</b> An administrator can set a new one for you " +
+          "from the Users screen. This panel cannot email you a reset link. " +
+          "If you are the only administrator, whoever maintains the website has to " +
+          "clear the accounts so the panel offers first-time setup again.</p></div>") +
         "</form></div>";
       $("#af").onsubmit = function (e) {
         e.preventDefault();
@@ -1285,7 +1297,21 @@
     function load() {
       api("users").then(function (d) {
         counts.users = d.users.length;
-        listEl.innerHTML = '<div class="rows">' + d.users.map(function (u) {
+
+        /* Only an administrator can reset a password, so a single one is a
+           lock with one key and no spare: forget it and the accounts have to
+           be cleared by hand before anybody can sign in again. Nothing said
+           so until it happened. */
+        var admins = d.users.filter(function (u) { return u.role === "admin"; });
+        var warn = admins.length === 1
+          ? '<div class="statusbar" role="status"><div class="grow">' +
+            "<b>" + esc(admins[0].name) + " is the only administrator.</b> " +
+            "Only an administrator can reset a forgotten password, so if theirs is lost, " +
+            "nobody can sign in until the accounts are cleared by hand. " +
+            "Add a second administrator you trust.</div></div>"
+          : "";
+
+        listEl.innerHTML = warn + '<div class="rows">' + d.users.map(function (u) {
           return '<a class="row" href="#/users" data-u="' + esc(u.email) + '">' +
             '<span class="mono">' + esc(initials(u.name)) + "</span>" +
             '<div class="body"><div class="name">' + esc(u.name) + "</div>" +

@@ -228,6 +228,15 @@ check("gallery publish saves captions", gal.photos[0].caption === "Captioned by 
 
 await page.click("[data-nav='users']");
 await page.waitForSelector("#adduser");
+
+/* The lockout nobody is warned about: only an administrator can reset a
+   password, so a lone administrator who forgets theirs shuts everyone out
+   until the accounts are cleared by hand. */
+await page.waitForSelector("#ulist .row");
+check("a lone administrator is warned about the lockout risk",
+  (await page.locator("#ulist .statusbar").count()) === 1 &&
+  (await page.locator("#ulist .statusbar").textContent()).includes("only administrator"));
+
 await page.click("#adduser");
 await page.waitForSelector("#uf");
 await page.fill('#uf [name="name"]', "Sr. Editor");
@@ -240,6 +249,27 @@ for (const sec of ["publications", "videos", "team"]) {
 await page.click("#uf button[type=submit]");
 await page.waitForFunction(() => document.querySelectorAll("#ulist .row").length === 2);
 check("new user appears in the list", true);
+
+/* The other half of that warning: a second editor is not a second key, but a
+   second administrator is, and then the notice must get out of the way. */
+await page.click("#adduser");
+await page.waitForSelector("#uf");
+await page.fill('#uf [name="name"]', "Second Admin");
+await page.fill('#uf [name="email"]', "second@example.org");
+await page.fill('#uf [name="password"]', "second-pass-99");
+await page.selectOption('#uf [name="role"]', "admin");
+await page.click("#uf button[type=submit]");
+await page.waitForFunction(() => document.querySelectorAll("#ulist .row").length === 3);
+check("the lockout warning clears once there are two administrators",
+  (await page.locator("#ulist .statusbar").count()) === 0);
+
+/* put it back the way the rest of the file expects */
+await page.click('#ulist .row[data-u="second@example.org"]');
+await page.waitForSelector("#udel");
+await page.click("#udel");
+await page.waitForFunction(() => document.querySelectorAll("#ulist .row").length === 2);
+check("the warning returns when the second administrator is removed",
+  (await page.locator("#ulist .statusbar").count()) === 1);
 
 await page.click("#logout");
 await page.waitForSelector("#af");
