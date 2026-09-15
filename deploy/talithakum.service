@@ -1,0 +1,41 @@
+# systemd unit for the Talitha Kum Kenya site.
+#   sudo cp deploy/talithakum.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now talithakum
+
+[Unit]
+Description=Talitha Kum Kenya website and admin panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=talithakum
+Group=talithakum
+WorkingDirectory=/srv/talithakum
+
+# Secrets live here, not in this file: this one is world-readable in /etc.
+# chmod 600 and chown talithakum:talithakum the env file.
+EnvironmentFile=/etc/talithakum.env
+
+ExecStart=/usr/bin/node /srv/talithakum/server/serve.mjs
+Restart=always
+RestartSec=3
+
+# The process needs to write site/content, site/static/uploads and site/dist,
+# and nothing else on the machine.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/talithakum
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=talithakum
+
+[Install]
+WantedBy=multi-user.target
