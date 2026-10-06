@@ -193,6 +193,11 @@ function cacheFor(pathname) {
      replacement gets a new filename, pages must revalidate so a publish is
      visible at once. */
   if (pathname.startsWith("/uploads/")) return "public, max-age=604800";
+  /* The panel is the one page staff reload all day, and a stale copy of it
+     looks exactly like a deploy that did not work — new code on the server,
+     the old screen in front of the person using it. Revalidating is not
+     enough without a validator to revalidate against, so never store it. */
+  if (pathname.startsWith("/admin")) return "no-store, max-age=0";
   if (pathname.startsWith("/api/")) return "public, max-age=60";
   return "public, max-age=0, must-revalidate";
 }

@@ -128,6 +128,14 @@ if (!up) { child.kill(); console.log(`\n${passed}/${passed + failed} checks pass
   const r = await fetch(base + "/admin/");
   check("the admin panel is served", r.ok && /admin/i.test(await r.text()));
 }
+{
+  /* A stale panel looks exactly like a deploy that did not work: new code on
+     the server, the old screen in front of the person using it. */
+  const r = await fetch(base + "/admin/");
+  check("the admin panel is never cached",
+    /no-store/.test(r.headers.get("cache-control") || ""), r.headers.get("cache-control"));
+}
+
 
 {
   const r = await fetch(base + "/api/admin/status");
