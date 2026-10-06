@@ -335,6 +335,44 @@ let cookie = "";
   check("but not without signing in", anon.status === 401, String(anon.status));
 }
 
+/* ---- a restart refreshes the build --------------------------------------- */
+
+/* site/dist is build output, and a restart usually follows a git pull. The
+   server only built when dist was missing, so new code served the previous
+   build — including /admin, which lives in dist. Pulling a change appeared
+   to do nothing until somebody happened to publish. */
+{
+  /* Change a source file the build reads, the way a pull would. */
+  const srcFile = join(work, "src/site/pages/about.html");
+  const before = await readFile(srcFile, "utf8");
+  await writeFile(srcFile, before + "\n<p>Marker added while the server was stopped.</p>\n");
+
+  const was = await fetch(base + "/about-us/").then((x) => x.text()).catch(() => "");
+  check("the change is not live before a restart", !was.includes("Marker added while"));
+
+  child.kill();
+  await new Promise((r) => setTimeout(r, 1200));
+
+  const restarted = spawn(process.execPath, [join(work, "server/serve.mjs")], {
+    env: { ...process.env, TK_LOCAL_DIR: work, SESSION_SECRET: "test-secret-for-the-self-host-suite", PORT: String(PORT), HOST: "127.0.0.1" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  restarted.stdout.on("data", (d) => { log += d; });
+  restarted.stderr.on("data", (d) => { log += d; });
+
+  const until = Date.now() + 90000;
+  let live = false;
+  while (Date.now() < until) {
+    const page = await fetch(base + "/about-us/").then((x) => x.text()).catch(() => "");
+    if (page.includes("Marker added while")) { live = true; break; }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  check("restarting rebuilds, so pulled changes go live", live, log.slice(-300));
+
+  restarted.kill();
+  await writeFile(srcFile, before);
+}
+
 child.kill();
 console.log(`\n${passed}/${passed + failed} checks passed`);
 process.exit(failed ? 1 : 0);

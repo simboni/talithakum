@@ -372,4 +372,10 @@ if (!(await fileAt(join(DIST, "index.html")))) {
 
 server.listen(PORT, HOST, () => {
   console.log(`[serve] Talitha Kum Kenya on http://${HOST}:${PORT}  (content: ${REPO})`);
+  /* site/dist is build output, and a restart usually follows a git pull. Without
+     this, new code served the previous build — including /admin itself, which
+     lives in dist — so pulling a change appeared to do nothing until somebody
+     happened to publish. Serving starts first, so the site never goes quiet
+     while this runs, and a failure leaves the previous build in place. */
+  scheduleRebuild();
 });

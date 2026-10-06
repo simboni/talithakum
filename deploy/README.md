@@ -213,6 +213,11 @@ sudo -u talithakum git pull
 systemctl restart talithakum
 ```
 
+The restart rebuilds the site, so pulled changes go live within seconds —
+including the admin panel, which is served from `site/dist` like everything
+else. Serving carries on throughout, and a build that fails leaves the
+previous version up.
+
 If you enabled `TK_GIT_PUSH`, pull before you push-heavy-edit, or the server's
 commits and yours will diverge and the push will start failing quietly.
 
