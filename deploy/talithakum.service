@@ -4,8 +4,11 @@
 
 [Unit]
 Description=Talitha Kum Kenya website and admin panel
-After=network-online.target
+After=network-online.target docker.service
 Wants=network-online.target
+# Not a hard dependency: without Docker this is an ordinary web service. But
+# where a container proxy fronts it, the site binds that bridge's gateway
+# address, and binding fails if Docker has not brought the bridge up yet.
 
 [Service]
 Type=simple

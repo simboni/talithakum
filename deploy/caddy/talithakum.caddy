@@ -1,0 +1,35 @@
+# Talitha Kum Kenya — for an edge Caddy that imports /etc/caddy/sites/*.caddy
+#
+# Install as /srv/edge/sites/talithakum.caddy — a new file in the directory
+# the edge Caddyfile already globs, so no existing configuration is edited.
+#
+#   sudo install -m 644 /srv/talithakum/deploy/caddy/talithakum.caddy \
+#       /srv/edge/sites/talithakum.caddy
+#   docker exec edge-caddy caddy validate --config /etc/caddy/Caddyfile
+#   docker exec edge-caddy caddy reload   --config /etc/caddy/Caddyfile
+#
+# The site runs as a systemd service on the host, bound to the edge network's
+# gateway (172.19.0.1) rather than 127.0.0.1 — a container cannot reach the
+# host's loopback — and rather than 0.0.0.0, which would publish the site on
+# port 8080 to the whole internet in plain HTTP, bypassing this proxy and its
+# certificate.
+#
+# Check the gateway is still 172.19.0.1 if the edge network is ever recreated:
+#   docker network inspect edge --format '{{(index .IPAM.Config 0).Gateway}}'
+
+www.talithakumraht.org {
+	# Every canonical and og:url the build emits is the bare domain, so www
+	# serving the same pages would have them pointing somewhere else.
+	redir https://talithakumraht.org{uri} permanent
+}
+
+talithakumraht.org {
+	encode zstd gzip
+
+	# Photographs from a phone arrive through the admin API as base64.
+	request_body {
+		max_size 25MB
+	}
+
+	reverse_proxy 172.19.0.1:8080
+}

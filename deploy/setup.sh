@@ -120,15 +120,32 @@ fi
 # ---------------------------------------------------------------- port
 
 PORT="${PORT:-}"
+# Re-running must not relocate a service that is already up: on the second run
+# the port scan would find 8080 "busy" — held by this very site — and move it.
+if [ -z "$PORT" ] && [ -f "$ENV_FILE" ]; then
+  PORT="$(grep '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- || true)"
+  [ -n "$PORT" ] && say "Keeping the port this site already uses: $PORT"
+fi
 if [ -z "$PORT" ]; then
   PORT=8080
   while ! port_free "$PORT"; do
     PORT=$((PORT + 1))
     [ "$PORT" -gt 8130 ] && die "No free port between 8080 and 8130."
   done
+  [ "$PORT" = "8080" ] || warn "Port 8080 was taken; using $PORT instead."
 fi
-[ "$PORT" = "8080" ] || warn "Port 8080 was taken; using $PORT instead."
-say "The site will listen on 127.0.0.1:$PORT"
+
+# Likewise the bind address: on a machine where a container proxy fronts the
+# site this is a docker bridge gateway, not loopback, and a re-run must not
+# quietly put it back and break the route.
+HOST_BIND="${HOST:-}"
+if [ -z "$HOST_BIND" ] && [ -f "$ENV_FILE" ]; then
+  HOST_BIND="$(grep '^HOST=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- || true)"
+  [ -n "$HOST_BIND" ] && [ "$HOST_BIND" != "127.0.0.1" ] && \
+    say "Keeping the bind address this site already uses: $HOST_BIND"
+fi
+HOST_BIND="${HOST_BIND:-127.0.0.1}"
+say "The site will listen on $HOST_BIND:$PORT"
 
 # ---------------------------------------------------------------- user, code
 
@@ -162,7 +179,7 @@ cat > "$ENV_FILE" <<EOF
 TK_LOCAL_DIR=$APP_DIR
 SESSION_SECRET=$secret
 PORT=$PORT
-HOST=127.0.0.1
+HOST=$HOST_BIND
 # Commit and push content after each publish. Needs a deploy key —
 # see "Backups" in deploy/README.md. Leave 0 until that key works.
 TK_GIT_PUSH=0

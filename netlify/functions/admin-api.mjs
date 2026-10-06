@@ -97,7 +97,13 @@ function verify(token) {
   } catch { return null; }
 }
 function sessionCookie(value, maxAge) {
-  const secure = LOCAL ? "" : " Secure;";
+  /* This used to drop Secure whenever TK_LOCAL_DIR was set, which was fine
+     while that only ever meant a test run. Self-hosting sets it in production
+     too, so the admin session cookie would have travelled without Secure on
+     the live site — and a browser would then send it over any plain-HTTP
+     route to the same host. Secure is now the default and the test harness
+     opts out explicitly. */
+  const secure = process.env.TK_INSECURE_COOKIE === "1" ? "" : " Secure;";
   return `tk_session=${value}; HttpOnly;${secure} SameSite=Lax; Path=/; Max-Age=${maxAge}`;
 }
 function cookieToken(req) {
