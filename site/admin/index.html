@@ -247,6 +247,43 @@
   .in::placeholder { color: #8a7d70; }
   textarea.in { min-height: 120px; resize: vertical; }
   textarea.in.tall { min-height: 320px; line-height: 1.7; }
+
+  /* ------------------------------------------------------------ rich text */
+  .rich { border: 1.5px solid var(--s-line); border-radius: var(--r-sm); background: var(--s-surface); overflow: hidden; }
+  .rich:focus-within { border-color: var(--s-accent); box-shadow: var(--focus-light); }
+  .rtools { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 8px;
+    background: var(--s-canvas); border-bottom: 1px solid var(--s-line); position: sticky; top: 0; z-index: 2; }
+  .rtools button { min-height: 36px; min-width: 36px; padding: 0 10px; font-size: 14px; font-weight: 700;
+    color: var(--s-ink); background: var(--s-surface); border: 1px solid var(--s-line);
+    border-radius: 7px; line-height: 1; }
+  .rtools button:hover { border-color: var(--a-line-strong); background: var(--s-gold-soft); }
+  .rtools button:focus-visible { outline: none; box-shadow: var(--focus-light); }
+  .rtools button[disabled] { opacity: .55; }
+  .rsep { width: 1px; height: 22px; background: var(--s-line); margin: 0 4px; }
+
+  .redit { min-height: 340px; padding: 18px 20px; font-size: 16px; line-height: 1.7;
+    color: var(--s-ink); overflow-wrap: anywhere; }
+  .redit:focus { outline: none; }
+  .redit > *:first-child { margin-top: 0; }
+  .redit p { margin: 0 0 1em; }
+  .redit h2 { font-family: var(--s-head); font-size: 23px; margin: 1.4em 0 .5em; }
+  .redit h3 { font-family: var(--s-head); font-size: 19px; margin: 1.3em 0 .4em; }
+  .redit h4 { font-size: 17px; margin: 1.2em 0 .4em; }
+  .redit ul, .redit ol { margin: 0 0 1em; padding-left: 1.6em; }
+  .redit li { margin-bottom: .35em; }
+  .redit blockquote { margin: 0 0 1em; padding: 4px 0 4px 16px;
+    border-left: 3px solid var(--s-gold); color: var(--s-body); font-style: italic; }
+  .redit a { color: var(--s-accent-dark); }
+  .redit figure { margin: 1.2em 0; }
+  .redit img { max-width: 100%; height: auto; border-radius: var(--r-sm); display: block; }
+  .redit figcaption { font-size: 14px; color: var(--a-muted); margin-top: 6px; }
+  /* An empty editor should say so rather than sit there as a blank slab. */
+  .redit:empty::before { content: attr(data-placeholder); color: var(--a-muted); }
+
+  @media (max-width: 520px) {
+    .rtools button { min-height: 40px; }
+    .redit { padding: 14px; min-height: 260px; }
+  }
   select.in { appearance: none; padding-right: 42px;
     background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6357' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center/14px; }
   .hint { font-size: 13px; line-height: 1.5; color: var(--a-muted); margin-top: 6px; }
@@ -559,7 +596,7 @@
         { n: "category", l: "Focus area", w: "select", opts: ["", "Prayer", "Protection", "Prevention", "Partnership & Networking"], hint: "Which of the four Ps this story belongs to" },
         { n: "summary", l: "One-sentence summary", w: "text", req: 1, span: 1, hint: "Shown on the news cards and in search results" },
         { n: "image", l: "Photo", w: "image", span: 1 },
-        { n: "body", l: "The story", w: "markdown", req: 1, span: 1, hint: "Blank line between paragraphs. **bold** for emphasis, - for lists." },
+        { n: "body", l: "The story", w: "markdown", req: 1, span: 1, hint: "Use the buttons above for headings, bold, lists, links and photographs. Pasting from Word is fine — the formatting is cleaned up." },
       ],
     },
     publications: {
@@ -1028,8 +1065,32 @@
         "</div>" + hint + "</div>";
     } else if (f.w === "text") {
       body = '<textarea class="in" id="' + id + '" data-f="' + f.n + '"' + describe + ' rows="3"></textarea>';
-    } else if (f.w === "markdown") {
-      body = '<textarea class="in tall" id="' + id + '" data-f="' + f.n + '"' + describe + "></textarea>";
+    } else if (f.w === "markdown" || f.w === "rich") {
+      /* A toolbar and a real editing area, rather than a box you type
+         asterisks into. The hidden input is what the form reads and what
+         validation sees, so everything downstream is unchanged. */
+      body = '<div class="rich" data-rich="' + f.n + '">' +
+        '<div class="rtools" role="toolbar" aria-label="Formatting">' +
+          '<button type="button" data-cmd="formatBlock" data-arg="h2" title="Heading">H2</button>' +
+          '<button type="button" data-cmd="formatBlock" data-arg="h3" title="Smaller heading">H3</button>' +
+          '<button type="button" data-cmd="formatBlock" data-arg="p" title="Normal text">Text</button>' +
+          '<span class="rsep"></span>' +
+          '<button type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>' +
+          '<button type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>' +
+          '<span class="rsep"></span>' +
+          '<button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>' +
+          '<button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>' +
+          '<button type="button" data-cmd="formatBlock" data-arg="blockquote" title="Quote">&ldquo; Quote</button>' +
+          '<span class="rsep"></span>' +
+          '<button type="button" data-rlink="1" title="Add a link">Link</button>' +
+          '<button type="button" data-rimg="1" title="Put a photograph here">Photo</button>' +
+          '<span class="rsep"></span>' +
+          '<button type="button" data-cmd="removeFormat" title="Clear formatting">Clear</button>' +
+        "</div>" +
+        '<div class="redit" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Write the story here. Use the buttons above for headings, lists and photographs." id="' + id + '"' + describe + "></div>" +
+        '<input type="hidden" data-f="' + f.n + '">' +
+        '<input type="file" class="vh" accept="image/*">' +
+      "</div>";
     } else if (f.w === "tags") {
       body = '<input class="in" id="' + id + '" data-f="' + f.n + '" data-tags="1"' + describe + ' value="' + esc(Array.isArray(v) ? v.join(", ") : (v || "")) + '">';
     } else if (f.w === "number") {
@@ -1040,6 +1101,197 @@
       body = '<input class="in" id="' + id + '" data-f="' + f.n + '"' + describe + ' value="' + esc(v == null ? "" : v) + '">';
     }
     return '<label class="f' + (f.span ? " span2" : "") + '" for="' + id + '">' + lbl + body + hint + "</label>";
+  }
+
+  /* ------------------------------------------------------------- rich text */
+
+  /* Only what a story needs, and nothing a pasted document can smuggle in.
+     Everything else is unwrapped, keeping the words and dropping the markup —
+     which is what makes pasting out of Word safe instead of catastrophic. */
+  var RICH_OK = {
+    P: [], BR: [], STRONG: [], EM: [], U: [],
+    H2: [], H3: [], H4: [], UL: [], OL: [], LI: [],
+    BLOCKQUOTE: [], FIGURE: [], FIGCAPTION: [],
+    A: ["href"], IMG: ["src", "alt"],
+  };
+  var RICH_SWAP = { B: "STRONG", I: "EM", H1: "H2", H5: "H4", H6: "H4", DIV: "P" };
+
+  function richSafeUrl(raw) {
+    var v = String(raw || "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
+    if (/^(https?:)?\/\//i.test(v)) return v;
+    if (/^\//.test(v)) return v;
+    if (/^(mailto|tel):[^\s]+$/i.test(v)) return v;
+    return "";
+  }
+
+  function richClean(html) {
+    var box = document.createElement("div");
+    box.innerHTML = String(html || "");
+    (function walk(node) {
+      var kids = Array.prototype.slice.call(node.childNodes);
+      kids.forEach(function (el) {
+        if (el.nodeType === 3) return;                       /* text, keep */
+        if (el.nodeType !== 1) { el.remove(); return; }      /* comments go */
+        var tag = el.tagName;
+        if (tag === "SCRIPT" || tag === "STYLE") { el.remove(); return; }
+        if (RICH_SWAP[tag]) {
+          var rep = document.createElement(RICH_SWAP[tag]);
+          while (el.firstChild) rep.appendChild(el.firstChild);
+          el.replaceWith(rep);
+          el = rep; tag = rep.tagName;
+        }
+        if (!Object.prototype.hasOwnProperty.call(RICH_OK, tag)) {
+          /* Keep the words, drop the wrapper — spans, fonts, Word's o:p. */
+          while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+          el.remove();
+          return;
+        }
+        Array.prototype.slice.call(el.attributes).forEach(function (a) {
+          var name = a.name.toLowerCase();
+          if (RICH_OK[tag].indexOf(name) < 0) { el.removeAttribute(a.name); return; }
+          if (name === "href" || name === "src") {
+            var safe = richSafeUrl(a.value);
+            if (!safe) el.removeAttribute(a.name); else el.setAttribute(name, safe);
+          }
+        });
+        if (tag === "IMG" && !el.getAttribute("src")) { el.remove(); return; }
+        if (tag === "A" && !el.getAttribute("href")) {
+          while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+          el.remove(); return;
+        }
+        walk(el);
+      });
+    })(box);
+
+    /* Typing into an empty editor leaves a bare text node, and some browsers
+       wrap new lines in <div>. Normalising to paragraphs here means what gets
+       stored is always block-structured, whoever typed it and in what. */
+    var BLOCK = { P: 1, H2: 1, H3: 1, H4: 1, UL: 1, OL: 1, BLOCKQUOTE: 1, FIGURE: 1 };
+    var loose = null;
+    Array.prototype.slice.call(box.childNodes).forEach(function (n) {
+      if (n.nodeType === 1 && BLOCK[n.tagName]) { loose = null; return; }
+      if (n.nodeType === 3 && !n.textContent.trim()) { n.remove(); return; }
+      if (!loose) { loose = document.createElement("p"); n.parentNode.insertBefore(loose, n); }
+      loose.appendChild(n);
+    });
+
+    return box.innerHTML.replace(/<p>(\s|&nbsp;|<br>)*<\/p>/gi, "").trim();
+  }
+
+  /* Stories written before the editor existed are markdown. Converting them
+     on open means nobody has to retype anything, and the first save stores
+     the result as ordinary formatted text. */
+  function mdToHtml(src) {
+    var inline = function (t) {
+      return esc(t)
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+    };
+    return String(src || "").split(/\n{2,}/).map(function (block) {
+      var b = block.trim();
+      if (!b) return "";
+      var h = /^(#{1,4})\s+(.*)$/.exec(b);
+      if (h) { var lvl = Math.min(4, h[1].length + 1); return "<h" + lvl + ">" + inline(h[2]) + "</h" + lvl + ">"; }
+      var img = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(b);
+      if (img) return '<figure><img src="' + esc(img[2]) + '" alt="' + esc(img[1]) + '"></figure>';
+      if (/^\d+[.)]\s/.test(b)) {
+        return "<ol>" + b.split(/\n/).map(function (l) { return "<li>" + inline(l.replace(/^\d+[.)]\s+/, "")) + "</li>"; }).join("") + "</ol>";
+      }
+      if (/^[-*]\s/.test(b)) {
+        return "<ul>" + b.split(/\n/).map(function (l) { return "<li>" + inline(l.replace(/^[-*]\s+/, "")) + "</li>"; }).join("") + "</ul>";
+      }
+      return "<p>" + inline(b).replace(/\n/g, "<br>") + "</p>";
+    }).join("");
+  }
+
+  var looksLikeHtml = function (s) { return /^\s*<(p|h2|h3|h4|ul|ol|blockquote|figure|div)\b/i.test(String(s || "")); };
+
+  function wireRich(scope) {
+    Array.prototype.forEach.call(scope.querySelectorAll("[data-rich]"), function (box) {
+      var edit = box.querySelector(".redit");
+      var store = box.querySelector("input[type=hidden]");
+      var fileIn = box.querySelector("input[type=file]");
+
+      var sync = function () { store.value = richClean(edit.innerHTML); dirty = true; };
+      edit.addEventListener("input", sync);
+      edit.addEventListener("blur", sync);
+
+      /* Word, Google Docs and web pages all paste a wall of styling that would
+         otherwise be stored and published verbatim. */
+      edit.addEventListener("paste", function (e) {
+        e.preventDefault();
+        var cb = e.clipboardData;
+        var html = cb && cb.getData("text/html");
+        var text = cb && cb.getData("text/plain");
+        var insert = html ? richClean(html)
+          : esc(text || "").split(/\n{2,}/).map(function (p) { return "<p>" + p.replace(/\n/g, "<br>") + "</p>"; }).join("");
+        document.execCommand("insertHTML", false, insert);
+        sync();
+      });
+
+      box.querySelectorAll("[data-cmd]").forEach(function (b) {
+        b.onmousedown = function (e) { e.preventDefault(); };   /* keep the selection */
+        b.onclick = function () {
+          var cmd = b.getAttribute("data-cmd"), arg = b.getAttribute("data-arg");
+          edit.focus();
+          document.execCommand(cmd, false, arg ? "<" + arg + ">" : undefined);
+          sync();
+        };
+      });
+
+      var link = box.querySelector("[data-rlink]");
+      if (link) {
+        link.onmousedown = function (e) { e.preventDefault(); };
+        link.onclick = function () {
+          var url = prompt("Link to which address?\n\nA full web address, or a page on this site such as /news/");
+          if (!url) return;
+          var safe = richSafeUrl(url);
+          if (!safe) return toast("That does not look like a web address");
+          edit.focus();
+          document.execCommand("createLink", false, safe);
+          sync();
+        };
+      }
+
+      var photo = box.querySelector("[data-rimg]");
+      if (photo) {
+        var at = null;
+        photo.onmousedown = function (e) { e.preventDefault(); };
+        photo.onclick = function () {
+          var sel = window.getSelection();
+          at = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+          fileIn.click();
+        };
+        fileIn.onchange = function () {
+          var picked = fileIn.files[0];
+          var release = function () { fileIn.value = ""; };
+          if (!picked) { release(); return; }
+          photo.disabled = true; photo.textContent = "Preparing…";
+          shrinkImage(picked, function (file) {
+            if (tooBig(file)) { photo.disabled = false; photo.textContent = "Photo"; release(); return toast("That photograph is too big"); }
+            photo.textContent = "Uploading…";
+            var rd = new FileReader();
+            rd.onerror = function () { photo.disabled = false; photo.textContent = "Photo"; release(); toast("That file could not be read"); };
+            rd.onload = function () {
+              api("upload", { method: "POST", body: { name: file.name, data: String(rd.result).split(",")[1] } })
+                .then(function (d) {
+                  var caption = prompt("Describe this photograph.\n\nRead aloud to blind visitors, and shown as a caption.") || "";
+                  edit.focus();
+                  /* Put it back where the cursor was before the file dialog. */
+                  if (at) { var s = window.getSelection(); s.removeAllRanges(); s.addRange(at); }
+                  document.execCommand("insertHTML", false,
+                    '<figure><img src="' + esc(d.path) + '" alt="' + esc(caption) + '">' +
+                    (caption ? "<figcaption>" + esc(caption) + "</figcaption>" : "") + "</figure><p><br></p>");
+                  sync();
+                })
+                .catch(function (e) { toast(e.message); })
+                .then(function () { photo.disabled = false; photo.textContent = "Photo"; release(); });
+            };
+            rd.readAsDataURL(file);
+          });
+        };
+      }
+    });
   }
 
   function wireUploads(scope) {
@@ -1150,9 +1402,19 @@
       S.fields.forEach(function (f) {
         var el = form.querySelector('[data-f="' + f.n + '"]');
         if (!el) return;
-        if (f.w === "text" || f.w === "markdown") el.value = data[f.n] == null ? "" : data[f.n];
+        if (f.w === "text") el.value = data[f.n] == null ? "" : data[f.n];
+        else if (f.w === "markdown" || f.w === "rich") {
+          var raw = data[f.n] == null ? "" : String(data[f.n]);
+          /* Older stories are markdown; they open as formatted text and are
+             stored that way from the next save. */
+          var html = looksLikeHtml(raw) ? richClean(raw) : mdToHtml(raw);
+          var box = el.closest("[data-rich]");
+          if (box) box.querySelector(".redit").innerHTML = html || "";
+          el.value = html;
+        }
       });
       wireUploads(form);
+      wireRich(form);
       form.addEventListener("input", function () { dirty = true; });
       form.addEventListener("change", function () { dirty = true; });
 

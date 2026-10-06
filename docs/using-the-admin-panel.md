@@ -115,11 +115,28 @@ that, send it to whoever maintains the site.
 
 ### Writing a story
 
-The **story** box accepts simple formatting:
+The **story** box works like a word processor. The buttons above it do:
 
-- Leave a blank line between paragraphs
-- `**like this**` makes text bold
-- A line starting with `-` becomes a bullet point
+| Button | What it does |
+| --- | --- |
+| **H2**, **H3** | Turn the current line into a heading |
+| **Text** | Turn a heading back into ordinary text |
+| **B**, *I* | Bold and italic (Ctrl+B and Ctrl+I also work) |
+| **• List**, **1. List** | Bulleted and numbered lists |
+| **" Quote** | Set a passage apart as a quotation |
+| **Link** | Link the selected words to a web address |
+| **Photo** | Put a photograph at the cursor, with a caption |
+| **Clear** | Strip formatting from the selection |
+
+**Pasting from Word, Google Docs or a web page is fine.** The words and their
+formatting come through; the invisible styling those programs carry is removed,
+which is what would otherwise break the look of the website.
+
+Photographs added with the **Photo** button ask for a description. Write one —
+it is read aloud to blind visitors and shown under the picture as a caption.
+
+Stories written before this editor existed open as ordinary formatted text.
+Nothing has to be retyped.
 
 ### Leaving without publishing
 

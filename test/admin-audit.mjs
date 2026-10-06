@@ -156,6 +156,95 @@ await page.waitForTimeout(400);
   }
 }
 
+/* -- the story editor ------------------------------------------------------ */
+
+/* The body used to be a box you typed asterisks into: no numbered lists at
+   all, and an image only worked as a whole paragraph of its own. */
+{
+  await page.goto(`${base}/admin#/news`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#newbtn");
+  await page.click("#newbtn");
+  await page.waitForSelector("#ef");
+  await page.fill('[data-f="title"]', "Audit Story With Real Formatting");
+  await page.fill('[data-f="date"]', "2026-09-15");
+  await page.selectOption('[data-f="category"]', "Prevention");
+  await page.fill('[data-f="summary"]', "Exercises the editor.");
+
+  check("the story box has a formatting toolbar", await page.locator(".rich .rtools button").count() >= 8);
+
+  const edit = page.locator(".redit");
+  await edit.click();
+  await page.keyboard.type("A heading");
+  await page.click('[data-cmd="formatBlock"][data-arg="h2"]');
+  await edit.click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Ordinary words with ");
+  await page.click('[data-cmd="bold"]');
+  await page.keyboard.type("bold");
+  await page.click('[data-cmd="bold"]');
+  await page.keyboard.press("Enter");
+  await page.click('[data-cmd="insertOrderedList"]');
+  await page.keyboard.type("First point");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Second point");
+  await page.waitForTimeout(300);
+
+  const html = await page.locator('[data-rich="body"] input[type=hidden]').inputValue();
+  check("headings are kept", /<h2>.*heading.*<\/h2>/i.test(html), html.slice(0, 200));
+  check("bold is kept", /<strong>bold<\/strong>/i.test(html), html.slice(0, 200));
+  check("numbered lists work at last",
+    /<ol>\s*<li>First point<\/li>\s*<li>Second point<\/li>\s*<\/ol>/i.test(html.replace(/\n/g, "")), html.slice(0, 300));
+
+  /* Pasting out of Word is how a site's styling usually gets wrecked. */
+  await page.evaluate(() => {
+    const edit = document.querySelector(".redit");
+    edit.focus();
+    const dt = new DataTransfer();
+    dt.setData("text/html",
+      '<p class="MsoNormal" style="mso-pagination:widow-orphan;font-family:Calibri">' +
+      '<span style="color:#FF0000;font-size:28pt">Pasted from Word</span>' +
+      '<o:p></o:p></p><script>window.pwned=1<\/script>' +
+      '<p style="margin:0"><b>Still bold</b> and <a href="javascript:alert(1)">a bad link</a></p>');
+    edit.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+  });
+  await page.waitForTimeout(400);
+  const pasted = await page.locator('[data-rich="body"] input[type=hidden]').inputValue();
+  check("pasted Word styling is stripped",
+    !/mso-|MsoNormal|font-family|style=|<o:p>/i.test(pasted), pasted.slice(0, 260));
+  check("the words survive the paste", /Pasted from Word/.test(pasted) && /Still bold/.test(pasted), pasted.slice(0, 260));
+  check("a script in the paste is dropped",
+    !/<script/i.test(pasted) && !(await page.evaluate(() => window.pwned)), pasted.slice(0, 200));
+  check("a javascript: link is dropped", !/javascript:/i.test(pasted), pasted.slice(0, 260));
+
+  await page.click("#ef button[type=submit]");
+  await page.waitForSelector(".done", { timeout: 20000 });
+  await page.waitForTimeout(400);
+  const f = join(work, "site/content/news/audit-story-with-real-formatting.json");
+  check("the formatted story is saved", existsSync(f));
+  if (existsSync(f)) {
+    const d = JSON.parse(await readFile(f, "utf8"));
+    check("and stored as formatted text, not asterisks",
+      /^\s*<(p|h2)/i.test(d.body) && /<ol>/i.test(d.body), String(d.body).slice(0, 160));
+  }
+}
+
+/* -- an old markdown story opens as formatted text ------------------------- */
+
+{
+  await page.goto(`${base}/admin#/news`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector(".row");
+  /* Every existing story predates the editor. */
+  await page.locator(".row").first().click();
+  await page.waitForSelector(".redit");
+  await page.waitForTimeout(600);
+  const shown = await page.locator(".redit").innerHTML();
+  check("an older markdown story opens as formatted text",
+    /<p>/i.test(shown) && !/\*\*/.test(shown), shown.slice(0, 160));
+  await page.click("#backbtn");
+  await page.waitForTimeout(400);
+}
+
 /* -- search and the facet filter ------------------------------------------ */
 
 await page.goto(`${base}/admin#/news`, { waitUntil: "domcontentloaded" });

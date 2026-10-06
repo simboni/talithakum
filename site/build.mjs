@@ -55,20 +55,104 @@ const news = (await collection("news")).sort((a, b) => b.date.localeCompare(a.da
 for (const n of news) n.slug = n.slug || slugify(n.title);
 
 /* ---------------------------------------------------------------------------
-   Tiny markdown for news bodies: paragraphs, headings, bold, links, images.
+   Story bodies.
+
+   The panel's editor stores HTML. Older stories were written as markdown and
+   are still stored that way, so both are rendered — a body is treated as HTML
+   only when it actually opens with a block tag the editor produces.
+
+   Everything is passed through an allowlist before it reaches a page. The
+   editors are trusted staff, but "trusted" is not a security model: an account
+   can be taken, and a pasted document can carry anything.
 --------------------------------------------------------------------------- */
 
+const ALLOWED = {
+  p: [], br: [], strong: [], b: [], em: [], i: [], u: [],
+  h2: [], h3: [], h4: [], ul: [], ol: [], li: [],
+  blockquote: [], figure: [], figcaption: [],
+  a: ["href", "title"], img: ["src", "alt"],
+};
+
+/* Anything that is not plainly a relative path or http(s) is dropped —
+   javascript:, data:, vbscript: and the tricks that hide them. */
+function safeUrl(raw) {
+  const v = String(raw || "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
+  if (/^(https?:)?\/\//i.test(v)) return v;
+  if (/^\/[^/]/.test(v) || /^\/$/.test(v)) return v;
+  if (/^(mailto|tel):[^\s]+$/i.test(v)) return v;
+  if (/^[\w.-]+(\/|$)/.test(v) && !/:/.test(v)) return v;
+  return "";
+}
+
+function sanitizeHtml(src) {
+  let out = "";
+  const open = [];
+  /* Dropping a <script> tag while keeping what was between it and its closing
+     tag puts the code on the page as visible words. Escaped, so it cannot run,
+     but it is still somebody's JavaScript printed into a news story. */
+  let swallow = "";
+  const re = /<\/?([a-zA-Z][a-zA-Z0-9]*)((?:[^>"']|"[^"]*"|'[^']*')*)>|<!--[\s\S]*?-->|[^<]+/g;
+  let m;
+  while ((m = re.exec(String(src || "")))) {
+    const chunk = m[0];
+    const tag = (m[1] || "").toLowerCase();
+    const closing = chunk[1] === "/";
+
+    if (swallow) { if (closing && tag === swallow) swallow = ""; continue; }
+    if (chunk.startsWith("<!--")) continue;
+    if (!chunk.startsWith("<")) { out += esc(chunk); continue; }
+    if (!closing && (tag === "script" || tag === "style" || tag === "template")) { swallow = tag; continue; }
+    if (!Object.prototype.hasOwnProperty.call(ALLOWED, tag)) continue;  /* iframe, object, … */
+
+    if (closing) {
+      const i = open.lastIndexOf(tag);
+      if (i < 0) continue;
+      while (open.length > i) out += `</${open.pop()}>`;
+      continue;
+    }
+
+    const attrs = [];
+    const ar = /([a-zA-Z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
+    let a;
+    while ((a = ar.exec(m[2] || ""))) {
+      const name = a[1].toLowerCase();
+      if (ALLOWED[tag].indexOf(name) < 0) continue;   /* style, class, on* all go */
+      let val = a[2] !== undefined ? a[2] : a[3] !== undefined ? a[3] : a[4] || "";
+      if (name === "href" || name === "src") { val = safeUrl(val); if (!val) continue; }
+      attrs.push(` ${name}="${esc(val)}"`);
+    }
+
+    if (tag === "br" || tag === "img") {
+      if (tag === "img" && !/ src="/.test(attrs.join(""))) continue;
+      out += `<${tag}${attrs.join("")}${tag === "img" ? ' loading="lazy"' : ""}>`;
+      continue;
+    }
+    out += `<${tag}${attrs.join("")}>`;
+    open.push(tag);
+  }
+  while (open.length) out += `</${open.pop()}>`;
+  return out;
+}
+
 function md(src) {
+  const text = String(src || "");
+  /* Written in the editor rather than typed as markdown. */
+  if (/^\s*<(p|h2|h3|h4|ul|ol|blockquote|figure)\b/i.test(text)) return sanitizeHtml(text);
+
   const inline = (t) => esc(t)
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
-  return String(src || "").split(/\n{2,}/).map((block) => {
+  return text.split(/\n{2,}/).map((block) => {
     const b = block.trim();
     if (!b) return "";
     const h = /^(#{1,4})\s+(.*)$/.exec(b);
     if (h) return `<h${h[1].length + 1}>${inline(h[2])}</h${h[1].length + 1}>`;
     const img = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(b);
     if (img) return `<figure><img src="${esc(img[2])}" alt="${esc(img[1])}" loading="lazy"></figure>`;
+    /* Numbered lists were never supported, so "1." came out as a paragraph. */
+    if (/^\d+[.)]\s/.test(b)) {
+      return "<ol>" + b.split(/\n/).map((l) => `<li>${inline(l.replace(/^\d+[.)]\s+/, ""))}</li>`).join("") + "</ol>";
+    }
     if (/^[-*]\s/.test(b)) {
       return "<ul>" + b.split(/\n/).map((l) => `<li>${inline(l.replace(/^[-*]\s+/, ""))}</li>`).join("") + "</ul>";
     }

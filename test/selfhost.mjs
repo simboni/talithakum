@@ -231,6 +231,49 @@ let cookie = "";
   await writeFile(buildFile, good);
 }
 
+/* ---- formatted stories reach the page, dangerous markup does not --------- */
+
+{
+  const slug = "formatting-reaches-the-page";
+  await fetch(base + `/api/admin/content/news/${slug}`, {
+    method: "PUT", headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify({ create: true, data: {
+      title: "Formatting Reaches The Page", date: "2026-09-15", category: "Prevention",
+      summary: "A formatted story.",
+      body: '<h2>A real heading</h2><p>With <strong>bold</strong> words.</p>' +
+            '<ol><li>First</li><li>Second</li></ol>' +
+            '<figure><img src="/uploads/gallery-2026-08-01.jpg" alt="In the body"></figure>' +
+            '<scr' + 'ipt>window.pwned=1</scr' + 'ipt>' +
+            '<p style="color:red" onclick="alert(1)">Styled by a stranger</p>' +
+            '<a href="javascript:alert(1)">bad</a><iframe src="//evil.test"></iframe>',
+    } }),
+  });
+
+  const until = Date.now() + 60000;
+  let pageHtml = "";
+  while (Date.now() < until) {
+    pageHtml = await fetch(base + `/news/${slug}/`).then((x) => (x.ok ? x.text() : "")).catch(() => "");
+    if (pageHtml.includes("A real heading")) break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  check("a formatted story renders its headings and lists",
+    /<h2>A real heading<\/h2>/.test(pageHtml) && /<strong>bold<\/strong>/.test(pageHtml) &&
+    /<ol><li>First<\/li>/.test(pageHtml.replace(/\s+/g, " ").replace(/> </g, "><")),
+    pageHtml ? "rendered" : "page never appeared");
+  check("an image inside the story body is shown",
+    /<img src="\/uploads\/gallery-2026-08-01\.jpg" alt="In the body"/.test(pageHtml));
+
+  /* The editors are trusted staff, but an account can be taken and a pasted
+     document can carry anything, so the renderer does not rely on that. */
+  check("a script in a story body never reaches the page", !/window\.pwned/.test(pageHtml));
+  check("an iframe never reaches the page", !/<iframe/i.test(pageHtml));
+  check("style and event attributes are stripped",
+    !/style="color:red"/.test(pageHtml) && !/onclick=/.test(pageHtml));
+  check("a javascript: link is stripped", !/href="javascript:/i.test(pageHtml));
+  check("but the words around them survive", /Styled by a stranger/.test(pageHtml));
+}
+
 /* ---- the contact form ---------------------------------------------------- */
 
 /* The form was built for Netlify Forms. Off Netlify the POST hit the static

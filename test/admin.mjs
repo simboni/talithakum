@@ -109,7 +109,7 @@ await page.fill('[data-f="title"]', "Test Story From The Panel");
 await page.fill('[data-f="date"]', "2026-07-28");
 await page.selectOption('[data-f="category"]', "Prevention");
 await page.fill('[data-f="summary"]', "A story published by the automated test.");
-await page.fill('[data-f="body"]', "It worked.\n\n**Bold** even.");
+await page.fill(".redit", "It worked. Bold even.");
 await page.click("#ef button[type=submit]");
 await page.waitForSelector(".toast.show");
 const storyFile = join(work, "site/content/news/test-story-from-the-panel.json");
@@ -117,7 +117,10 @@ await page.waitForTimeout(300);
 check("publishing writes the story file", existsSync(storyFile));
 if (existsSync(storyFile)) {
   const story = JSON.parse(await readFile(storyFile, "utf8"));
-  check("the story has the right fields", story.title === "Test Story From The Panel" && story.category === "Prevention" && story.body.includes("**Bold**"));
+  check("the story has the right fields",
+    story.title === "Test Story From The Panel" && story.category === "Prevention" &&
+    /It worked\./.test(story.body) && /^\s*<(p|h2|div)/i.test(story.body),
+    JSON.stringify(story.body || "").slice(0, 120));
   check("publishing pins the public web address", story.slug === "test-story-from-the-panel", story.slug);
 }
 
@@ -130,7 +133,7 @@ await page.waitForSelector("#ef");
 await page.fill('[data-f="title"]', "Test Story From The Panel");
 await page.fill('[data-f="date"]', "2026-07-29");
 await page.fill('[data-f="summary"]', "A different story that happens to share a headline.");
-await page.fill('[data-f="body"]', "Should be refused.");
+await page.fill(".redit", "Should be refused.");
 await page.click("#ef button[type=submit]");
 await page.waitForSelector("#eerr.show, .toast.show");
 await page.waitForTimeout(400);
