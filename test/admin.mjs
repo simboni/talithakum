@@ -197,6 +197,66 @@ check("a same-named upload does not overwrite the first",
 await page.click("#ef button[type=submit]");
 await page.waitForSelector(".toast.show");
 
+/* -- big photographs are shrunk in the browser ----------------------------- */
+
+/* The whole point: a phone photograph used to be rejected for being over the
+   limit, and staff were told to WhatsApp it to themselves to shrink it. */
+{
+  await page.click("[data-nav='news']");
+  await page.waitForSelector("#newbtn");
+  await page.click("#newbtn");
+  await page.waitForSelector("#ef");
+
+  /* A real 3600x2400 JPEG, drawn in the browser so the bytes are genuine
+     rather than a file that merely claims to be large. */
+  const bigPath = join(work, "big-photo.jpg");
+  const b64 = await page.evaluate(async () => {
+    const c = document.createElement("canvas");
+    c.width = 3600; c.height = 2400;
+    const x = c.getContext("2d");
+    /* Noise, so it cannot be compressed down to nothing and the test still
+       exercises a genuinely heavy file. */
+    const img = x.createImageData(c.width, c.height);
+    for (let i = 0; i < img.data.length; i += 4) {
+      img.data[i] = Math.random() * 255; img.data[i + 1] = Math.random() * 255;
+      img.data[i + 2] = Math.random() * 255; img.data[i + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    return c.toDataURL("image/jpeg", 0.95).split(",")[1];
+  });
+  const bigBuf = Buffer.from(b64, "base64");
+  await writeFile(bigPath, bigBuf);
+
+  await page.setInputFiles('[data-pick="image"] input[type=file]', bigPath);
+  await page.waitForFunction(() => {
+    const el = document.querySelector('[data-pick="image"] [data-f]');
+    return el && el.value.startsWith("/uploads/");
+  }, null, { timeout: 60000 });
+
+  const storedName = (await page.inputValue('[data-pick="image"] [data-f]')).split("/").pop();
+  const stored = join(work, "site/static/uploads", storedName);
+  check("a large photograph uploads instead of being refused", existsSync(stored), storedName);
+
+  if (existsSync(stored)) {
+    const after = (await readFile(stored)).length;
+    check("it was shrunk before it left the browser",
+      after < bigBuf.length / 2,
+      `${(bigBuf.length / 1024 / 1024).toFixed(1)} MB in, ${(after / 1024).toFixed(0)} KB stored`);
+    /* A JPEG's dimensions live in the SOF0 marker: FF C0, length, precision,
+       then height and width as big-endian 16-bit. */
+    const buf = await readFile(stored);
+    let width = 0;
+    for (let i = 2; i < buf.length - 9; i++) {
+      if (buf[i] === 0xff && (buf[i + 1] === 0xc0 || buf[i + 1] === 0xc2)) {
+        width = buf.readUInt16BE(i + 7); break;
+      }
+    }
+    check("and resized to something the site actually displays",
+      width > 0 && width <= 2000, `${width}px wide`);
+  }
+  await page.click("#backbtn");
+}
+
 /* -- gallery manager ------------------------------------------------------- */
 
 await page.click("[data-nav='gallery']");

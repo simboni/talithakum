@@ -308,6 +308,7 @@
   .gitem .gops .rm { margin-left: auto; color: var(--a-danger); border-color: var(--a-danger-line); }
   .gitem .gops .rm:hover { background: var(--a-danger-soft); border-color: var(--a-danger); }
 
+
   /* ----------------------------------------------------------------- toast */
   .toast { position: fixed; z-index: 60; top: 16px; left: 50%;
     transform: translateX(-50%) translateY(-16px);
@@ -427,6 +428,59 @@
   }
 
   /* -------------------------------------------------------------- helpers */
+
+  /* Phone photographs arrive at 5-12 MB and four thousand pixels wide. The
+     site never displays anything wider than about 1600, so every one of those
+     pixels was paid for twice: once by the editor fighting the size limit, and
+     again by every visitor on mobile data. Shrinking in the browser before the
+     upload fixes both, and means the limit stops being something staff have to
+     think about at all.
+
+     PDFs, SVGs and GIFs pass straight through — the first cannot be resized
+     this way and the other two would lose transparency or animation. */
+  var MAX_EDGE = 2000;
+  function shrinkImage(file, done) {
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type || "")) return done(file);
+
+    var finish = function (bitmapOrImg, w, h, release) {
+      var scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+      /* Already small in both senses: re-encoding would only lose quality. */
+      if (scale === 1 && file.size <= 900 * 1024) { release(); return done(file); }
+      var c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(w * scale));
+      c.height = Math.max(1, Math.round(h * scale));
+      c.getContext("2d").drawImage(bitmapOrImg, 0, 0, c.width, c.height);
+      release();
+      c.toBlob(function (blob) {
+        /* A tiny PNG logo can come out of the JPEG encoder bigger than it
+           went in, so only take the new one when it actually won. */
+        if (!blob || blob.size >= file.size) return done(file);
+        var name = String(file.name || "photo").replace(/\.[^.]+$/, "") + ".jpg";
+        try { done(new File([blob], name, { type: "image/jpeg" })); }
+        catch (e) { blob.name = name; done(blob); }
+      }, "image/jpeg", 0.82);
+    };
+
+    /* from-image keeps photographs taken sideways the right way up; without
+       it some browsers hand back the raw sensor orientation. */
+    if (window.createImageBitmap) {
+      createImageBitmap(file, { imageOrientation: "from-image" }).then(function (bm) {
+        finish(bm, bm.width, bm.height, function () { bm.close && bm.close(); });
+      }).catch(function () { done(file); });
+      return;
+    }
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      finish(img, img.naturalWidth, img.naturalHeight, function () { URL.revokeObjectURL(url); });
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); done(file); };
+    img.src = url;
+  }
+
+  var UPLOAD_CAP = 12 * 1024 * 1024;
+  function tooBig(file) { return file.size > UPLOAD_CAP; }
+
 
   function toast(msg, ok) {
     var t = $("#toast");
@@ -1000,14 +1054,21 @@
         toast("Removed — publish to make it permanent", true);
       };
       fileIn.onchange = function () {
-        var file = fileIn.files[0];
+        var picked = fileIn.files[0];
         /* Always release the input, whatever happens below. A file input that
            still holds the last selection fires no change event when the same
            file is picked again, so a rejected or retried upload looks dead. */
         var release = function () { fileIn.value = ""; };
-        if (!file) { release(); return; }
-        if (file.size > 4.2 * 1024 * 1024) { toast("That file is bigger than 4 MB — please shrink it first"); release(); return; }
-        var btn = pick; btn.disabled = true; btn.textContent = "Uploading…";
+        if (!picked) { release(); return; }
+        var btn = pick, wasLabel = btn.textContent;
+        btn.disabled = true; btn.textContent = "Preparing…";
+        shrinkImage(picked, function (file) {
+        if (tooBig(file)) {
+          btn.disabled = false; btn.textContent = wasLabel;
+          toast("That file is over 12 MB, which is too big even after shrinking — send it to the site maintainer instead");
+          release(); return;
+        }
+        btn.textContent = "Uploading…";
         /* Publishing mid-upload used to save the item with an empty path */
         var form = p.closest("form");
         var submit = form && form.querySelector("button[type=submit]");
@@ -1040,6 +1101,7 @@
             .catch(function (e) { done("Choose…"); toast(e.message); });
         };
         rd.readAsDataURL(file);
+        });
       };
     });
   }
@@ -1251,24 +1313,29 @@
       if (!files.length) { release(); return; }
       var addBtn = $("#addph"), saveBtn = $("#savegal");
       addBtn.disabled = true; saveBtn.disabled = true;
-      var n = 0;
+      var n = 0, skipped = 0;
       var step = function () {
-        addBtn.textContent = "Uploading " + (n + 1) + " of " + files.length + "…";
+        addBtn.textContent = "Uploading " + Math.min(n + 1, files.length) + " of " + files.length + "…";
       };
       step();
-      files.reduce(function (chain, file) {
+      files.reduce(function (chain, original) {
         return chain.then(function () {
-          if (file.size > 4.2 * 1024 * 1024) { toast(file.name + " is bigger than 4 MB and was skipped"); n++; step(); return; }
           return new Promise(function (res) {
-            var rd = new FileReader();
-            rd.onerror = function () { toast(file.name + " could not be read"); n++; step(); res(); };
-            rd.onload = function () {
-              api("upload", { method: "POST", body: { name: file.name, data: String(rd.result).split(",")[1] } })
-                .then(function (d) { photos.push({ image: d.path, caption: "" }); dirty = true; })
-                .catch(function (e) { toast(e.message); })
-                .then(function () { n++; step(); res(); });
-            };
-            rd.readAsDataURL(file);
+            shrinkImage(original, function (file) {
+              if (tooBig(file)) {
+                toast(original.name + " is over 12 MB even after shrinking, and was skipped");
+                n++; skipped++; step(); return res();
+              }
+              var rd = new FileReader();
+              rd.onerror = function () { toast(original.name + " could not be read"); n++; skipped++; step(); res(); };
+              rd.onload = function () {
+                api("upload", { method: "POST", body: { name: file.name, data: String(rd.result).split(",")[1] } })
+                  .then(function (d) { photos.push({ image: d.path, caption: "" }); dirty = true; })
+                  .catch(function (e) { toast(e.message); skipped++; })
+                  .then(function () { n++; step(); res(); });
+              };
+              rd.readAsDataURL(file);
+            });
           });
         });
       }, Promise.resolve()).then(function () {
@@ -1276,7 +1343,12 @@
         saveBtn.disabled = false;
         release();
         draw();
-        toast(n + " added — press Publish gallery to put them on the website", true);
+        /* It used to report every file as added, including the ones it had
+           just skipped for being too big. */
+        var added = n - skipped;
+        toast(added + (added === 1 ? " photo added" : " photos added") +
+          (skipped ? ", " + skipped + " skipped" : "") +
+          " — press Publish gallery to put them on the website", added > 0);
       });
     };
 

@@ -100,10 +100,17 @@ your change, wait a minute and refresh the page.
 
 ### Photographs
 
-Press **Choose…** to pick a picture from your computer or phone. Files must
-be **under about 4 MB** — most phone photos are larger, so you may need to
-resize one first. If a photo is rejected for being too big, WhatsApp it to
-yourself and save the copy: WhatsApp shrinks it automatically.
+Press **Choose…** to pick a picture from your computer or phone. Photographs
+straight off a phone are fine — the panel shrinks them automatically before
+they are sent, so you do not need to resize anything first, and a large photo
+is no longer refused.
+
+You will see **Preparing…** for a moment on a big picture. That is the
+shrinking. It also means pages load quickly for visitors on mobile data,
+which matters more than the extra detail nobody sees.
+
+PDFs are not shrunk, and must be under **12 MB**. If a report is larger than
+that, send it to whoever maintains the site.
 
 ### Writing a story
 
@@ -174,7 +181,9 @@ address. Change the title a little — add the year, or the place.
 Your internet connection dropped. Check it and try again; nothing was lost.
 
 **A photo will not upload.**
-It is over 4 MB. Shrink it, or send it via WhatsApp and use that copy.
+Photographs are shrunk automatically, so this is rare. If it still refuses,
+the file is over 12 MB — usually a video saved as an image, or a scan. Send
+it to whoever maintains the site.
 
 **I published but the website has not changed.**
 Wait a minute, then refresh with **Ctrl+Shift+R** (or **Cmd+Shift+R** on a

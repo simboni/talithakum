@@ -345,6 +345,12 @@ export default async function handler(req) {
     /* -- uploads ----------------------------------------------------------- */
 
     if (seg[0] === "upload" && method === "POST") {
+      /* Every other write checks a privilege; this one never did, so an
+         account with no sections at all — which an administrator can create
+         by unticking every box — could still write files into the site. */
+      if (me.role !== "admin" && !(me.sections || []).length) {
+        return bad("Your account cannot change any part of the website yet. Ask an administrator for access.", 403);
+      }
       const { name, data } = await req.json();
       const ext = String(name || "").split(".").pop().toLowerCase();
       if (!UPLOAD_TYPES[ext]) return bad("Only images and PDFs can be uploaded");
@@ -357,7 +363,11 @@ export default async function handler(req) {
          /uploads/* is cached for a week, so the wrong image sticks. */
       const stamp = createHash("sha1").update(buf).digest("hex").slice(0, 8);
       const path = `${UPLOADS}/${base}-${stamp}.${ext === "jpeg" ? "jpg" : ext}`;
-      if (buf.length > 4.5 * 1024 * 1024) return bad("Files bigger than about 4 MB cannot go through the panel — email it to the site maintainer instead");
+      /* The old 4 MB ceiling was the GitHub contents API's, reached through a
+         base64 round trip. Self-hosted, the file goes straight to disk, and
+         the panel now shrinks photographs before they ever get here — so this
+         only has to be large enough for a long report as a PDF. */
+      if (buf.length > 12.5 * 1024 * 1024) return bad("Files bigger than 12 MB cannot go through the panel — send it to the site maintainer instead");
       await (await content(me)).writeBinary(path, buf);
       return json({ path: `/uploads/${path.split("/").pop()}` });
     }

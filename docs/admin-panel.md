@@ -50,8 +50,11 @@ live site in about a minute.
 
 ## Limits worth knowing
 
-- Uploads go through the function, which caps files at about **4 MB**.
-  Larger PDFs should be added to `site/static/uploads/` directly.
+- The panel shrinks photographs in the browser before uploading — longest
+  edge 2000px, JPEG quality 0.82 — so a phone photo arrives as a few hundred
+  kilobytes rather than ten megabytes. PDFs are sent unchanged, and the
+  function caps any upload at **12 MB**. Anything larger belongs in
+  `site/static/uploads/` directly.
 - If a token expires (fine-grained PATs have an expiry date), publishing
   fails with a GitHub error — generate a new token and update
   `GITHUB_TOKEN`.
