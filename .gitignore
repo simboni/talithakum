@@ -31,3 +31,5 @@ site/dist/
 
 # Root lockfile: local npm installs create this; the deploy uses npm install.
 package-lock.json
+site/.dist-next/
+site/.dist-old/

@@ -21,7 +21,11 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..");
-const dist = join(here, "dist");
+/* The build clears its output directory before writing anything, so building
+   straight over a live site means a failure part-way through leaves no site at
+   all. TK_DIST lets the server build into a staging directory and swap it in
+   only once the build has actually succeeded. */
+const dist = process.env.TK_DIST || join(here, "dist");
 
 const read = (p) => readFile(p, "utf8");
 const S = (n) => read(join(repo, "src", "site", n));

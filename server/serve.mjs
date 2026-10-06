@@ -23,8 +23,8 @@
 
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { readFile, stat } from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { readFile, stat, rm, rename } from "node:fs/promises";
+import { createReadStream, existsSync } from "node:fs";
 import { join, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -99,23 +99,39 @@ function rebuild() {
   if (building) { buildAgain = true; return; }
   building = true;
   const started = Date.now();
+  /* Build beside the live site, not over it. build.mjs clears its output
+     directory first, so building straight into dist meant a failure part-way
+     left the site with no pages at all — the opposite of what the message
+     below used to claim. */
+  const staging = join(REPO, "site", ".dist-next");
+  const live = join(REPO, "site", "dist");
+  const old = join(REPO, "site", ".dist-old");
   const child = spawn(process.execPath, [join(REPO, "site", "build.mjs")], {
     cwd: REPO, stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, TK_DIST: staging },
   });
   let err = "";
   child.stderr.on("data", (d) => { err += d; });
   child.on("close", async (code) => {
-    building = false;
-    if (code === 0) {
-      await loadRedirects();
-      console.log(`[serve] rebuilt in ${Date.now() - started}ms`);
-      if (process.env.TK_GIT_PUSH === "1") pushContent();
-    } else {
-      /* A failed build leaves the previous dist in place, so the site stays up
-         on the last good version rather than going blank. */
-      console.error(`[serve] BUILD FAILED (exit ${code}) — site left on the previous version\n${err.trim()}`);
+    try {
+      if (code === 0) {
+        await rm(old, { recursive: true, force: true });
+        if (existsSync(live)) await rename(live, old);
+        await rename(staging, live);
+        await rm(old, { recursive: true, force: true });
+        await loadRedirects();
+        console.log(`[serve] rebuilt in ${Date.now() - started}ms`);
+        if (process.env.TK_GIT_PUSH === "1") pushContent();
+      } else {
+        await rm(staging, { recursive: true, force: true });
+        console.error(`[serve] BUILD FAILED (exit ${code}) — site left on the previous version\n${err.trim()}`);
+      }
+    } catch (e) {
+      console.error("[serve] could not swap in the new build:", e.message);
+    } finally {
+      building = false;
+      if (buildAgain) { buildAgain = false; scheduleRebuild(); }
     }
-    if (buildAgain) { buildAgain = false; scheduleRebuild(); }
   });
 }
 
@@ -220,6 +236,19 @@ const server = createServer(async (req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") {
       res.writeHead(405, { "content-type": "text/plain" });
       return res.end("Method not allowed");
+    }
+
+    /* -- uploads --------------------------------------------------------- */
+
+    /* Served from site/static/uploads, where the admin panel writes them,
+       before dist, where the build copies them. An uploaded photograph is
+       then visible the instant it is uploaded rather than whenever the next
+       rebuild finishes — and it stays visible if that rebuild ever fails.
+       Uploads are content, not build output. */
+    if (pathname.startsWith("/uploads/") && !pathname.includes("..")) {
+      const live = join(REPO, "site", "static", "uploads", pathname.slice("/uploads/".length));
+      if (live.startsWith(join(REPO, "site", "static", "uploads") + sep) &&
+          await sendFile(res, live, pathname)) return;
     }
 
     /* -- redirects ------------------------------------------------------- */

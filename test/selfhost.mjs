@@ -9,7 +9,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { mkdtemp, cp, readFile } from "node:fs/promises";
+import { mkdtemp, cp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -175,6 +175,59 @@ let cookie = "";
   check("the published story appears on the public site", live, log.slice(-500));
   if (live) console.log(`      (rebuild finished; story live on /news/)`);
   void tookMs;
+}
+
+/* ---- an uploaded photograph is visible at once --------------------------- */
+
+/* Uploads are written to site/static/uploads, but the site is served from
+   site/dist. Serving only from dist meant an uploaded photograph 404'd at its
+   own URL until the next rebuild copied it across — and for ever if that
+   rebuild failed. */
+{
+  const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+  const r = await fetch(base + "/api/admin/upload", {
+    method: "POST", headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify({ name: "straight-away.png", data: png }),
+  });
+  const d = await r.json().catch(() => ({}));
+  check("an upload is accepted", r.ok && typeof d.path === "string", JSON.stringify(d));
+
+  if (d.path) {
+    /* No waiting, no rebuild: ask for it immediately. */
+    const img = await fetch(base + d.path);
+    check("an uploaded photograph is served at once, before any rebuild",
+      img.ok && (img.headers.get("content-type") || "").includes("image/png"),
+      `${img.status} ${img.headers.get("content-type")}`);
+  }
+}
+
+/* ---- a broken build does not take the site down -------------------------- */
+
+/* build.mjs clears its output directory before writing, so building straight
+   over the live site meant a failure part-way left no pages at all. */
+{
+  const livePage = await fetch(base + "/news/").then((x) => x.text());
+  const buildFile = join(work, "site/build.mjs");
+  const good = await readFile(buildFile, "utf8");
+  await writeFile(buildFile, good + "\nthrow new Error('deliberate test failure');\n");
+
+  await fetch(base + "/api/admin/content/news/break-the-build", {
+    method: "PUT", headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify({ create: true, data: {
+      title: "Break The Build", date: "2026-09-15", category: "Prevention",
+      summary: "x", body: "x",
+    } }),
+  });
+  await new Promise((r) => setTimeout(r, 15000));
+
+  const after = await fetch(base + "/news/");
+  const afterBody = await after.text();
+  check("the site survives a failed rebuild",
+    after.ok && afterBody.length > 0 && afterBody === livePage,
+    `HTTP ${after.status}, ${afterBody.length} bytes`);
+  check("and the failure is reported in the log", /BUILD FAILED/.test(log), log.slice(-300));
+
+  await writeFile(buildFile, good);
 }
 
 child.kill();
