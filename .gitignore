@@ -33,3 +33,7 @@ site/dist/
 package-lock.json
 site/.dist-next/
 site/.dist-old/
+
+# Contact-form messages. Never commit these: an enquiry to this organisation
+# may carry a disclosure from a survivor.
+enquiries/

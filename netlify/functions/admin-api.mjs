@@ -305,6 +305,36 @@ export default async function handler(req) {
 
     /* -- user management (admins only) ------------------------------------ */
 
+    /* -- enquiries from the contact form ---------------------------------- */
+
+    /* Stored by server/serve.mjs outside site/content, so they are never
+       committed or published — a message to this organisation may carry a
+       disclosure from a survivor. Read here so staff can actually see them. */
+    if (seg[0] === "enquiries") {
+      if (!LOCAL) return bad("Enquiries are only available on the self-hosted site", 404);
+      const { readdir, readFile: rf, unlink } = await import("node:fs/promises");
+      const { join: j } = await import("node:path");
+      const dir = j(LOCAL, "enquiries");
+
+      if (method === "GET") {
+        const files = (await readdir(dir).catch(() => [])).filter((f) => f.endsWith(".json"));
+        const items = await Promise.all(files.map(async (f) => {
+          try { return { id: f.replace(/\.json$/, ""), ...JSON.parse(await rf(j(dir, f), "utf8")) }; }
+          catch { return null; }
+        }));
+        /* Newest first: the one that needs answering is the one just in. */
+        return json({ items: items.filter(Boolean).sort((a, b) => String(b.at).localeCompare(String(a.at))) });
+      }
+
+      if (method === "DELETE" && seg[1]) {
+        if (me.role !== "admin") return bad("Only an administrator can delete an enquiry", 403);
+        const id = String(seg[1]).replace(/[^A-Za-z0-9_-]/g, "");
+        if (!id) return bad("No such enquiry", 404);
+        await unlink(j(dir, id + ".json")).catch(() => {});
+        return json({ ok: true });
+      }
+    }
+
     if (seg[0] === "users") {
       if (me.role !== "admin") return bad("Admins only", 403);
 

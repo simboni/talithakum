@@ -155,6 +155,11 @@
   .tile .ico svg { width: 21px; height: 21px; }
   .tile b { font-family: var(--s-head); font-size: 19px; font-weight: 600; color: var(--s-ink); }
   .tile span { font-size: 14px; color: var(--a-muted); }
+  .row.enq { align-items: flex-start; gap: var(--sp-3); }
+  .row.enq .btn { flex: none; }
+  .enq-msg { margin: 8px 0 0; font-size: 15px; line-height: 1.55; color: var(--s-body);
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+
   .statusbar { display: flex; gap: var(--sp-4); align-items: center; flex-wrap: wrap;
     background: var(--s-gold-soft); border: 1px solid #f0e2c2; border-radius: var(--r-md);
     padding: 16px 20px; margin-bottom: var(--sp-6); font-size: 15px; color: var(--a-onsoft); }
@@ -177,7 +182,7 @@
   .countline { font-size: 14px; color: var(--a-muted); margin-bottom: var(--sp-3); }
 
   .rows { display: flex; flex-direction: column; gap: var(--sp-2); }
-  a.row { display: flex; align-items: center; gap: var(--sp-4); min-height: 76px; padding: 14px 18px;
+  a.row, .row.enq { display: flex; align-items: center; gap: var(--sp-4); min-height: 76px; padding: 14px 18px;
     text-decoration: none; color: inherit; background: var(--s-surface);
     border: 1px solid var(--s-line); border-left: 3px solid transparent; border-radius: var(--r-md);
     transition: background .15s, border-color .15s, box-shadow .15s; }
@@ -576,7 +581,7 @@
         { n: "type", l: "Type", w: "select", req: 1, opts: ["Annual Report", "Policy Brief", "Research Report", "Training Manual", "Awareness Material", "Newsletter", "Case Study", "Prayer Resource"] },
         { n: "lang", l: "Language", w: "select", opts: [["en", "English"], ["sw", "Kiswahili"]] },
         { n: "summary", l: "Short summary", w: "text", req: 1, span: 1 },
-        { n: "pdf", l: "PDF file", w: "file", req: 1, span: 1, hint: "The document itself, up to about 4 MB" },
+        { n: "pdf", l: "PDF file", w: "file", req: 1, span: 1, hint: "The document itself, up to 12 MB" },
         { n: "pages", l: "Number of pages", w: "number" },
         { n: "themes", l: "Themes (up to three)", w: "multi", opts: THEMES, max: 3, span: 1 },
         { n: "keywords", l: "Keywords", w: "tags", span: 1, hint: "Comma-separated: places, partners, target groups" },
@@ -723,6 +728,7 @@
         '<select id="secsel">' +
           '<option value="home"' + (active === "home" ? " selected" : "") + '>Home</option>' +
           items.map(function (i) { return '<option value="' + i.k + '"' + (active === i.k ? " selected" : "") + ">" + esc(i.label) + "</option>"; }).join("") +
+          '<option value="enquiries"' + (active === "enquiries" ? " selected" : "") + ">Messages</option>" +
           (me.role === "admin" ? '<option value="users"' + (active === "users" ? " selected" : "") + ">Users</option>" : "") +
           '<option value="account"' + (active === "account" ? " selected" : "") + ">My account</option>" +
         "</select>" +
@@ -739,6 +745,7 @@
         '<button class="nitem' + (active === "home" ? " on" : "") + '" data-nav="home">' + icon(ICON_HOME) + '<span class="t">Home</span></button>' +
         '<div class="nav-label">Content</div>' + nav +
         '<div class="nav-label">Settings</div>' +
+        '<button class="nitem' + (active === "enquiries" ? " on" : "") + '" data-nav="enquiries">' + icon('<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>') + '<span class="t">Messages</span>' + (counts.enquiries ? '<span class="count">' + counts.enquiries + "</span>" : "") + "</button>" +
         (me.role === "admin" ? '<button class="nitem' + (active === "users" ? " on" : "") + '" data-nav="users">' + icon(ICON_USERS) + '<span class="t">Users</span>' + (counts.users != null ? '<span class="count">' + counts.users + "</span>" : "") + "</button>" : "") +
         '<button class="nitem' + (active === "account" ? " on" : "") + '" data-nav="account">' + icon('<circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M4.2 7.6l1.9 1.1M17.9 15.3l1.9 1.1M4.2 16.4l1.9-1.1M17.9 8.7l1.9-1.1"/>') + '<span class="t">My account</span></button>' +
         '<div class="foot">' +
@@ -1470,6 +1477,56 @@
     load();
   }
 
+  /* ------------------------------------------------------------ enquiries */
+
+  /* Messages from the contact page. They are stored on the server outside
+     everything that gets published or committed, and shown here because an
+     enquiry nobody can read is the same as one that was lost. */
+  function renderEnquiries() {
+    shell(pageHead('<a href="#/">Home</a>', "Messages",
+      "Sent through the contact page on the website.") +
+      '<div id="enqlist">' + skeletons(3) + "</div>", "enquiries");
+
+    var el = $("#enqlist");
+    function load() {
+      api("enquiries").then(function (d) {
+        var items = d.items || [];
+        counts.enquiries = items.length;
+        if (!items.length) {
+          el.innerHTML = '<div class="state empty"><h3>No messages yet</h3>' +
+            "<p>Anything sent through the contact page will appear here.</p></div>";
+          return;
+        }
+        el.innerHTML = '<div class="countline">' + items.length +
+          (items.length === 1 ? " message" : " messages") + "</div>" +
+          '<div class="rows">' + items.map(function (it) {
+            var when = it.at ? new Date(it.at) : null;
+            return '<div class="row enq"><div class="body">' +
+              '<div class="name">' + esc(it.name || "Someone") + "</div>" +
+              '<div class="meta">' + esc(it.contact || "") +
+              (when && !isNaN(when) ? " · " + when.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) +
+                ", " + when.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : "") + "</div>" +
+              '<p class="enq-msg">' + esc(it.message || "") + "</p></div>" +
+              (me.role === "admin" ? '<button class="btn small danger" data-enq="' + esc(it.id) + '">Delete</button>' : "") +
+              "</div>";
+          }).join("") + "</div>";
+
+        el.querySelectorAll("[data-enq]").forEach(function (b) {
+          b.onclick = function () {
+            if (!confirm("Delete this message? It cannot be recovered.")) return;
+            api("enquiries/" + encodeURIComponent(b.getAttribute("data-enq")), { method: "DELETE" })
+              .then(function () { load(); toast("Message deleted", true); })
+              .catch(function (e) { toast(e.message); });
+          };
+        });
+      }).catch(function (err) {
+        el.innerHTML = errorState(err.message, true);
+        var r = $("#retrybtn"); if (r) r.onclick = load;
+      });
+    }
+    load();
+  }
+
   /* --------------------------------------------------------------- account */
 
   function renderAccount() {
@@ -1507,6 +1564,7 @@
     var head = parts[0];
 
     if (head === "users") { if (me.role !== "admin") return renderHome(); return renderUsers(); }
+    if (head === "enquiries") return renderEnquiries();
     if (head === "account") return renderAccount();
     if (head === "gallery") { if (me.sections.indexOf("gallery") < 0) return denied(); return renderGallery(); }
     if (SECTIONS[head]) {

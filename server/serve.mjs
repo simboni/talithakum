@@ -23,7 +23,7 @@
 
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { readFile, stat, rm, rename } from "node:fs/promises";
+import { readFile, stat, rm, rename, mkdir, writeFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { join, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -160,8 +160,25 @@ function pushContent() {
   })();
 }
 
-/* ---- static files -------------------------------------------------------- */
+/* ---- the contact form ---------------------------------------------------- */
 
+/* Deliberately outside site/content and site/static, the two paths
+   TK_GIT_PUSH commits: an enquiry to this organisation may carry a
+   disclosure from a survivor and must never reach a public repository. */
+const ENQUIRIES = join(REPO, "enquiries");
+
+/* Enough to stop a script filling the disk, loose enough that a family
+   sharing one connection is never turned away. */
+const contactHits = new Map();
+function contactFlood(ip) {
+  const now = Date.now();
+  const recent = (contactHits.get(ip) || []).filter((t) => now - t < 10 * 60 * 1000);
+  contactHits.set(ip, recent.concat(now));
+  if (contactHits.size > 5000) contactHits.clear();
+  return recent.length >= 5;
+}
+
+/* ---- static files -------------------------------------------------------- */
 const MIME = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8",
@@ -231,6 +248,53 @@ const server = createServer(async (req, res) => {
         scheduleRebuild();
       }
       return;
+    }
+
+    /* -- the contact form ------------------------------------------------ */
+
+    /* The form was built for Netlify Forms, which intercepted the POST. Here
+       it reached the static handler and got 405, so every enquiry from the
+       contact page was lost with an error page.
+
+       Enquiries are written OUTSIDE site/content and site/static — the two
+       paths TK_GIT_PUSH commits. A message to this organisation may carry a
+       disclosure from a survivor, and must never be pushed to a public
+       repository. */
+    if (pathname === "/api/contact" && req.method === "POST") {
+      const chunks = [];
+      let size = 0;
+      for await (const c of req) {
+        size += c.length;
+        if (size > 64 * 1024) { res.writeHead(413); return res.end("Too large"); }
+        chunks.push(c);
+      }
+      const form = new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
+      const field = (n) => String(form.get(n) || "").trim().slice(0, 5000);
+
+      /* The honeypot is invisible to a person, so anything in it is a bot.
+         Answer exactly as for a real message rather than telling it so. */
+      if (field("website")) { res.writeHead(303, { location: "/thanks/" }); return res.end(); }
+
+      const who = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?";
+      if (contactFlood(String(who).split(",")[0].trim())) {
+        res.writeHead(429, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("Too many messages from this connection. Please try again in a few minutes.");
+      }
+
+      const name = field("name"), contact = field("contact"), message = field("message");
+      if (!name || !contact || !message) {
+        res.writeHead(400, { "content-type": "text/html; charset=utf-8" });
+        return res.end('<p>Please fill in your name, how to reach you, and a message. <a href="/contacts/">Go back</a>.</p>');
+      }
+
+      const at = new Date().toISOString();
+      const id = at.replace(/[:.]/g, "-") + "-" + Math.random().toString(36).slice(2, 8);
+      await mkdir(ENQUIRIES, { recursive: true });
+      await writeFile(join(ENQUIRIES, id + ".json"),
+        JSON.stringify({ at, name, contact, message }, null, 2) + "\n", { mode: 0o600 });
+      console.log(`[serve] enquiry received from ${name}`);
+      res.writeHead(303, { location: "/thanks/" });
+      return res.end();
     }
 
     if (req.method !== "GET" && req.method !== "HEAD") {

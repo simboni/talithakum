@@ -9,9 +9,10 @@
  */
 
 import { spawn } from "node:child_process";
-import { mkdtemp, cp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, cp, readFile, writeFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -228,6 +229,67 @@ let cookie = "";
   check("and the failure is reported in the log", /BUILD FAILED/.test(log), log.slice(-300));
 
   await writeFile(buildFile, good);
+}
+
+/* ---- the contact form ---------------------------------------------------- */
+
+/* The form was built for Netlify Forms. Off Netlify the POST hit the static
+   handler and got 405, so every enquiry from the contact page was lost. */
+{
+  const body = new URLSearchParams({
+    name: "Jane Wanjiku", contact: "jane@example.org",
+    message: "Please call me about a training session.", website: "",
+  });
+  const r = await fetch(base + "/api/contact", {
+    method: "POST", redirect: "manual",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+  check("the contact form is accepted and thanks the sender",
+    r.status === 303 && r.headers.get("location") === "/thanks/", `${r.status} ${r.headers.get("location")}`);
+
+  const dir = join(work, "enquiries");
+  const saved = (await readdir(dir).catch(() => [])).filter((f) => f.endsWith(".json"));
+  check("the enquiry is stored", saved.length === 1, `${saved.length} files`);
+  if (saved.length) {
+    const d = JSON.parse(await readFile(join(dir, saved[0]), "utf8"));
+    check("with everything the sender typed",
+      d.name === "Jane Wanjiku" && d.contact === "jane@example.org" && /training session/.test(d.message),
+      JSON.stringify(d));
+  }
+
+  /* An enquiry to this organisation may carry a disclosure from a survivor.
+     It must not sit anywhere that gets published or committed. */
+  check("and nowhere that is published or committed",
+    !existsSync(join(work, "site/content/enquiries")) &&
+    !existsSync(join(work, "site/static/enquiries")) &&
+    !existsSync(join(work, "site/dist/enquiries")));
+
+  const bot = await fetch(base + "/api/contact", {
+    method: "POST", redirect: "manual",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ name: "Bot", contact: "b@b.b", message: "spam", website: "filled" }).toString(),
+  });
+  const afterBot = (await readdir(dir).catch(() => [])).filter((f) => f.endsWith(".json"));
+  check("a bot filling the honeypot is dropped without being told",
+    bot.status === 303 && afterBot.length === 1, `${bot.status}, ${afterBot.length} stored`);
+
+  const empty = await fetch(base + "/api/contact", {
+    method: "POST", redirect: "manual",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ name: "", contact: "", message: "" }).toString(),
+  });
+  check("an empty message is refused", empty.status === 400, String(empty.status));
+
+  /* And staff can actually read it. */
+  const listed = await fetch(base + "/api/admin/enquiries", { headers: { cookie } });
+  const ld = await listed.json().catch(() => ({}));
+  check("the panel can read the enquiries",
+    listed.ok && Array.isArray(ld.items) && ld.items.length === 1 && ld.items[0].name === "Jane Wanjiku",
+    JSON.stringify(ld).slice(0, 160));
+
+  const anon = await fetch(base + "/api/admin/enquiries");
+  check("but not without signing in", anon.status === 401, String(anon.status));
 }
 
 child.kill();

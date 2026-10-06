@@ -77,6 +77,7 @@ are allowed to change:
 | **Videos** | Films played from YouTube or Vimeo. |
 | **Team members** | The board and staff on the Our Team page. |
 | **Photo gallery** | Photographs on the Gallery page. |
+| **Messages** | Enquiries people send through the contact page. |
 
 You may not see all of these. Each account is given only the sections it
 needs. If a section you expect is missing, an administrator can add it.
@@ -143,6 +144,20 @@ in batches:
 
 Adding, reordering, captioning and removing all do nothing until you press
 **Publish gallery**. Until then you can change your mind freely.
+
+---
+
+## Messages from the contact page
+
+**Messages** lists what people have sent through the contact form, newest
+first, with the name and the email or phone they gave.
+
+Reply from your own email or phone — the panel does not send replies. An
+administrator can delete a message once it has been dealt with.
+
+These are never published and never leave the server. Treat them as
+confidential: anything a person tells this organisation may be sensitive, and
+some of it may come from survivors.
 
 ---
 

@@ -334,11 +334,14 @@ await page("/donate/", shell({
   canonical: "/donate/", body: await frag("donate"),
 }));
 
-/* Contacts gets a real, working Netlify form. */
+/* The contact form posts to the site's own handler (server/serve.mjs), which
+   stores the enquiry and redirects to /thanks/. It works with JavaScript off,
+   and the honeypot stays: it was the only part of the Netlify setup that was
+   actually doing anything useful. */
 {
   let body = await frag("contacts");
   body = body.replace(/<!-- If a WPForms[\s\S]*?-->/, `
-    <form name="contact" method="POST" action="/thanks/" data-netlify="true" netlify-honeypot="website"
+    <form name="contact" method="POST" action="/api/contact"
           style="display:grid;gap:16px;margin-top:8px" data-reveal>
       <p style="display:none"><label>Leave this empty <input name="website"></label></p>
       <div class="tks-f" style="display:grid;gap:6px">
