@@ -94,9 +94,9 @@ You will then see a green **Published** panel confirming it worked, with a
 button to view it on the live website. That panel stays until you move on —
 it is not a message that disappears.
 
-**Changes take about a minute to appear on the public website.** The site
+**Changes appear on the public website within seconds.** The site
 rebuilds itself after every publish. If you look immediately and do not see
-your change, wait a minute and refresh the page.
+your change, give it a few seconds and refresh the page.
 
 ### Photographs
 
@@ -186,7 +186,7 @@ the file is over 12 MB — usually a video saved as an image, or a scan. Send
 it to whoever maintains the site.
 
 **I published but the website has not changed.**
-Wait a minute, then refresh with **Ctrl+Shift+R** (or **Cmd+Shift+R** on a
+Give it a few seconds, then refresh with **Ctrl+Shift+R** (or **Cmd+Shift+R** on a
 Mac). Browsers hold on to old copies of pages.
 
 **I renamed a story — will old links break?**

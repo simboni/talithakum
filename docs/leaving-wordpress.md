@@ -8,7 +8,7 @@ Staff publish through **Decap CMS** at `/admin`: a free, open-source panel
 where they sign in with an email invitation (no GitHub account needed) and
 edit publications, videos, team members and news in plain forms. Every save
 commits to this repository and Netlify redeploys the site — a change is live
-in about a minute.
+within seconds.
 
 ## How the pages work without WordPress
 
@@ -73,7 +73,7 @@ years keep working.
 ## Day-to-day
 
 - **Add anything:** open `/admin`, pick the collection, fill the form,
-  Publish. Live in about a minute.
+  Publish. Live within seconds.
 - **Edit or delete:** same place.
 - **Nothing to update, ever:** there is no WordPress, no plugins, no PHP.
   The only moving parts are static files on a CDN.

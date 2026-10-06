@@ -858,7 +858,7 @@
       $("#homebody").innerHTML =
         '<div class="statusbar"><div class="grow">' +
           (lastPublish ? "<b>Last publish:</b> " + esc(lastPublish) + ". " : "") +
-          "The website rebuilds about a minute after each publish.</div>" +
+          "The website rebuilds within seconds of each publish.</div>" +
           '<a class="btn small" href="/" target="_blank" rel="noopener">View the live site</a></div>' +
         '<div class="tiles">' + tiles + "</div>" +
         "<h2 style=\"margin-bottom:16px\">Recently published</h2>" + recentHtml;
@@ -1125,14 +1125,14 @@
 
       shell(pageHead('<a href="#/' + type + '">' + esc(S.label) + "</a> · " + (isNew ? "New" : "Editing"),
         isNew ? "New " + S.single : (data[S.idField] || "Edit"),
-        isNew ? null : "Changes go live on the website about a minute after you publish.") +
+        isNew ? null : "Changes go live on the website within seconds of publishing.") +
         '<form class="panel" id="ef" novalidate><div class="err" id="eerr" role="alert"></div>' + body +
         /* Delete used to share the sticky bar with Publish. On a phone that
            made the bar two rows deep — a fifth of the screen — and put the
            destructive button directly under the one people press every time. */
         (isNew ? "" :
           '<div class="dz"><div class="grow"><b>Delete this ' + esc(S.single) + "</b>" +
-          "<span>It disappears from the website about a minute later. This cannot be undone.</span></div>" +
+          "<span>It disappears from the website within seconds. This cannot be undone.</span></div>" +
           '<button class="btn danger" type="button" id="delbtn">Delete</button></div>') +
         '<div class="bar"><button class="btn primary" type="submit">Publish</button>' +
         '<button class="btn" type="button" id="backbtn">Cancel</button>' +
@@ -1211,7 +1211,7 @@
                evidence at all that the publish had happened. */
             $("#main").innerHTML =
               '<div class="done" role="status"><h3>Published</h3>' +
-              "<p>“" + esc(out[S.idField]) + "” will be live on the website in about a minute.</p>" +
+              "<p>“" + esc(out[S.idField]) + "” is live on the website — give it a few seconds, then refresh.</p>" +
               '<div class="btns">' +
               (type === "news" ? '<a class="btn primary" href="/news/' + encodeURIComponent(target) + '/" target="_blank" rel="noopener">View it on the website</a>' : '<a class="btn primary" href="/" target="_blank" rel="noopener">View the website</a>') +
               '<button class="btn" type="button" id="donelist">Back to ' + esc(S.label) + "</button>" +
@@ -1355,7 +1355,7 @@
     $("#savegal").onclick = function () {
       var b = $("#savegal"); b.disabled = true; b.textContent = "Publishing…";
       api("content/gallery/gallery", { method: "PUT", body: { data: { photos: photos } } })
-        .then(function () { dirty = false; counts.gallery = photos.length; toast("Gallery published — live in about a minute", true); })
+        .then(function () { dirty = false; counts.gallery = photos.length; toast("Gallery published — live within seconds", true); })
         .catch(function (e) { toast(e.message); })
         .then(function () { b.disabled = false; b.textContent = "Publish gallery"; });
     };
